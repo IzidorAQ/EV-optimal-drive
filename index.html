@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>EV Eko-vožnja • Simulator + navigacija</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c1417;--bg2:#0f1b1f;--panel:#16242b;--panel2:#1b2d35;
+  --line:#27424c;--line2:#1d343c;
+  --txt:#e9f1f2;--muted:#8aa3ab;--muted2:#5f7882;
+  --teal:#27d3b5;--regen:#6ee87f;--blue:#4aa8ff;--hot:#f3a14a;--hot2:#ff6a52;--grid:#203840;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 80% -10%,rgba(39,211,181,.06),transparent 60%),radial-gradient(900px 500px at -10% 110%,rgba(110,232,127,.05),transparent 60%),var(--bg);color:var(--txt);font-family:"Inter",system-ui,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1480px;margin:0 auto;padding:18px 18px 60px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.brand{display:flex;flex-direction:column;gap:2px}
+.brand .eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--teal)}
+.brand h1{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:26px;letter-spacing:-.01em;margin:0;line-height:1.05}
+.brand h1 .thin{color:var(--muted)}
+.brand .sub{color:var(--muted);font-size:12.5px}
+.lang{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.lang button{background:transparent;color:var(--muted);border:0;padding:7px 12px;font-family:"JetBrains Mono",monospace;font-size:12px;cursor:pointer}
+.lang button.on{background:var(--teal);color:#04201a;font-weight:700}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+@media(max-width:1080px){.grid{grid-template-columns:1fr}}
+.card{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:14px}
+.card .hd{display:flex;align-items:center;gap:8px;padding:13px 15px;border-bottom:1px solid var(--line2)}
+.card .hd .dot{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 10px var(--teal)}
+.card .hd h2{font-family:"Space Grotesk",sans-serif;font-size:13px;font-weight:600;letter-spacing:.02em;margin:0;text-transform:uppercase}
+.card .bd{padding:14px 15px}
+.field{margin-bottom:13px}.field:last-child{margin-bottom:0}
+label.lbl{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;font-weight:600}
+input,select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:9px;color:var(--txt);padding:9px 11px;font-family:"Inter",sans-serif;font-size:13.5px;outline:none}
+input:focus,select:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(39,211,181,.12)}
+select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238aa3ab' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rangewrap{display:flex;align-items:center;gap:10px}
+input[type=range]{-webkit-appearance:none;appearance:none;height:5px;background:linear-gradient(90deg,var(--regen),var(--teal),var(--hot));border-radius:5px;padding:0;border:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--txt);border:3px solid var(--teal);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--txt);border:3px solid var(--teal);cursor:pointer}
+.rngval{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--teal);min-width:62px;text-align:right}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{flex:1;background:transparent;border:0;color:var(--muted);padding:8px 4px;font-size:12.5px;cursor:pointer;font-family:"Inter",sans-serif}
+.seg button.on{background:var(--panel2);color:var(--txt);font-weight:600}
+.seg button+button{border-left:1px solid var(--line)}
+.chk{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none}
+.chk input{width:auto}
+.btn{width:100%;border:0;border-radius:10px;padding:13px;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:14px;letter-spacing:.02em;cursor:pointer;color:#04201a;background:linear-gradient(135deg,var(--teal),var(--regen));transition:transform .06s,filter .15s}
+.btn:hover{filter:brightness(1.06)}.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.5;cursor:default;filter:grayscale(.4)}
+.btn.ghost{background:transparent;border:1px solid var(--teal);color:var(--teal)}
+.btn.nav{background:linear-gradient(135deg,#1f8cff,#4aa8ff);color:#021627;margin-top:10px}
+.status{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--muted);margin-top:10px;min-height:16px}
+.status.err{color:var(--hot2)}.status.ok{color:var(--regen)}
+#map{height:420px;border-radius:12px;border:1px solid var(--line);background:#0a1316}
+.leaflet-container{background:#0a1316;font-family:"Inter",sans-serif}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--bg);border:1px solid var(--line2);border-radius:11px;padding:12px 13px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--teal)}
+.kpi.regen::before{background:var(--regen)}.kpi.warn::before{background:var(--hot)}
+.kpi .k{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.kpi .v{font-family:"JetBrains Mono",monospace;font-size:22px;font-weight:700;line-height:1}
+.kpi .v small{font-size:12px;color:var(--muted);font-weight:500}
+.kpi .v2{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--muted2);margin-top:4px}
+.charttitle{display:flex;justify-content:space-between;align-items:center;padding:4px 6px 6px}
+.charttitle .t{font-family:"Space Grotesk",sans-serif;font-size:12.5px;font-weight:600}
+.legend{display:flex;gap:13px;flex-wrap:wrap;font-size:11px;color:var(--muted);font-family:"JetBrains Mono",monospace}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+canvas.chart{width:100%;display:block;cursor:crosshair}
+.readout{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--muted);padding:6px 6px 0;min-height:18px}
+.readout b{color:var(--teal);font-weight:700}
+.divider{height:1px;background:var(--line2);margin:14px 0}
+.hint{font-size:11.5px;color:var(--muted2);margin-top:8px;line-height:1.5}
+footer{margin-top:26px;color:var(--muted2);font-size:11px;line-height:1.6;border-top:1px solid var(--line2);padding-top:14px}
+a{color:var(--teal)}
+.spacer{height:10px}
+
+/* ===== NAV OVERLAY ===== */
+#nav{position:fixed;inset:0;background:linear-gradient(180deg,#08110f,#0c1417);z-index:9000;display:none;flex-direction:column;padding:18px 18px env(safe-area-inset-bottom,18px)}
+#nav.show{display:flex}
+.navtop{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:12px}
+.navtop button{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px}
+.navmain{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}
+.navdir{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:clamp(20px,6vw,34px);letter-spacing:.02em;padding:10px 22px;border-radius:14px;margin-bottom:4px}
+.navnow{font-family:"JetBrains Mono",monospace;font-weight:800;font-size:clamp(64px,22vw,150px);line-height:.9;letter-spacing:-.02em}
+.navnow small{font-size:.28em;color:var(--muted);font-weight:500;letter-spacing:.1em}
+.navtarget{font-family:"JetBrains Mono",monospace;font-size:clamp(15px,4.5vw,22px);color:var(--teal)}
+.navtarget b{font-weight:800}
+.navlook{min-height:24px;font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--hot);margin-top:6px}
+.navmini{width:100%;max-width:520px;height:120px;border:1px solid var(--line);border-radius:12px;margin-top:10px;background:#0a1316}
+.navstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:560px;width:100%;margin:14px auto 0}
+.navstat{background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:9px}
+.navstat .k{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.navstat .v{font-family:"JetBrains Mono",monospace;font-size:17px;font-weight:700}
+.navstat .v small{font-size:11px;color:var(--muted)}
+
+/* ===== RATING ===== */
+#ratingCard{display:none}
+.scorewrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.scorebig{font-family:"JetBrains Mono",monospace;font-weight:800;font-size:64px;line-height:1}
+.scorelbl{font-family:"Space Grotesk",sans-serif;font-size:18px;font-weight:700}
+.bars{flex:1;min-width:200px}
+.bar{display:flex;align-items:center;gap:8px;margin:5px 0;font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--muted)}
+.bar .track{flex:1;height:10px;border-radius:6px;background:#13242a;overflow:hidden}
+.bar .fill{height:100%;border-radius:6px}
+.runlist{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.run{display:flex;align-items:center;gap:10px;font-family:"JetBrains Mono",monospace;font-size:12px;padding:7px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--line2)}
+.run .tag{font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px}
+.tag.fast{background:rgba(255,106,82,.18);color:var(--hot2)}
+.tag.slow{background:rgba(74,168,255,.18);color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <span class="eyebrow" data-i="eyebrow">Kras • Energetski profil vožnje</span>
+      <h1><span data-i="title1">EV Eko-vožnja</span> <span class="thin" data-i="title2">/ simulator + navigacija</span></h1>
+      <span class="sub" data-i="sub">Optimalna hitrost za vsak segment, dejansko vreme, GPS navigacija in ocena vožnje</span>
+    </div>
+    <div class="lang">
+      <button id="lang-sl" class="on" onclick="setLang('sl')">SL</button>
+      <button id="lang-en" onclick="setLang('en')">EN</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <div class="hd"><span class="dot"></span><h2 data-i="hd_params">Parametri vožnje</h2></div>
+        <div class="bd">
+          <div class="field">
+            <label class="lbl" data-i="l_vehicle">Vozilo</label>
+            <select id="vehicle"></select>
+            <div id="vehInfo" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted2);margin-top:6px"></div>
+          </div>
+          <div class="divider"></div>
+          <div class="field"><label class="lbl" data-i="l_start">Začetek</label><input id="start" value="Zagrajec 11"></div>
+          <div class="field"><label class="lbl" data-i="l_dest">Cilj</label><input id="dest" value="Komen 78"></div>
+          <label class="chk" style="margin-top:4px"><input type="checkbox" id="autoWeather" checked><span data-i="l_autow">Samodejno vreme in veter (online)</span></label>
+          <div class="divider"></div>
+          <div class="row2">
+            <div class="field"><label class="lbl" data-i="l_temp">Temperatura</label><div class="rangewrap"><input type="range" id="temp" min="-15" max="40" value="8"><span class="rngval" id="tempV">8 °C</span></div></div>
+            <div class="field"><label class="lbl" data-i="l_soc">Začetni SoC</label><div class="rangewrap"><input type="range" id="soc" min="5" max="100" value="80"><span class="rngval" id="socV">80 %</span></div></div>
+          </div>
+          <div class="field"><label class="lbl" data-i="l_weather">Vreme / podlaga</label>
+            <div class="seg" id="weather"><button data-w="dry" class="on" data-i="w_dry">Suho</button><button data-w="rain" data-i="w_rain">Dež</button><button data-w="snow" data-i="w_snow">Sneg</button></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label class="lbl" data-i="l_wind">Veter</label><div class="rangewrap"><input type="range" id="wind" min="0" max="80" value="0"><span class="rngval" id="windV">0 km/h</span></div></div>
+            <div class="field"><label class="lbl" data-i="l_winddir">Smer (od)</label>
+              <select id="winddir"><option value="-1" data-i="wd_none">brez</option><option value="0">S 0°</option><option value="45">SV 45°</option><option value="90">V 90°</option><option value="135">JV 135°</option><option value="180">J 180°</option><option value="225">JZ 225°</option><option value="270">Z 270°</option><option value="315">SZ 315°</option></select>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field"><label class="lbl" data-i="l_pax">Potniki</label><input type="number" id="pax" value="1" min="1" max="7"></div>
+            <div class="field"><label class="lbl" data-i="l_cargo">Tovor (kg)</label><input type="number" id="cargo" value="0" min="0" max="500"></div>
+          </div>
+          <div class="field"><label class="lbl" data-i="l_climate">Klima / ogrevanje</label>
+            <div class="seg" id="climate"><button data-c="on" class="on" data-i="c_on">Vključeno</button><button data-c="off" data-i="c_off">Izključeno</button></div>
+          </div>
+          <div class="divider"></div>
+          <div class="field"><label class="lbl"><span data-i="l_style">Slog</span> · <span id="styleLbl" style="color:var(--teal)"></span></label>
+            <div class="rangewrap"><input type="range" id="style" min="0" max="100" value="20"><span class="rngval" id="styleV">20</span></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label class="lbl" data-i="l_vmax">Maks. hitrost</label><div class="rangewrap"><input type="range" id="vmax" min="50" max="150" value="100" step="5"><span class="rngval" id="vmaxV">100</span></div></div>
+            <div class="field"><label class="lbl" data-i="l_comfort">Ovinki (g)</label><div class="rangewrap"><input type="range" id="alat" min="15" max="50" value="30"><span class="rngval" id="alatV">0.30 g</span></div></div>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn" id="run" data-i="btn_run">Izračunaj optimalno vožnjo</button>
+          <button class="btn nav" id="navBtn" disabled data-i="btn_nav">▶ Navigacija (GPS)</button>
+          <button class="btn ghost" id="demoBtn" disabled style="margin-top:8px" data-i="btn_demo">Demo vožnja (brez GPS)</button>
+          <div class="status" id="status"></div>
+        </div>
+      </div>
+      <div class="hint" style="padding:12px 4px 0" data-i="data_note"></div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="hd"><span class="dot"></span><h2 id="mapTitle" data-i="hd_route">Trasa · barva = poraba</h2>
+          <span style="margin-left:auto" class="legend" id="mapLegend">
+            <span><i style="background:var(--regen)"></i><span data-i="lg_regen">regen</span></span>
+            <span><i style="background:var(--teal)"></i><span data-i="lg_low">nizka</span></span>
+            <span><i style="background:var(--hot)"></i><span data-i="lg_high">visoka</span></span>
+          </span>
+        </div>
+        <div class="bd" style="padding:12px"><div id="map"></div></div>
+      </div>
+
+      <div class="card" id="ratingCard" style="margin-bottom:16px">
+        <div class="hd"><span class="dot" style="background:var(--blue);box-shadow:0 0 10px var(--blue)"></span><h2 data-i="hd_rating">Ocena vožnje</h2>
+          <button class="navtop" style="margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 11px;cursor:pointer;font-size:12px" id="closeRating" data-i="btn_closerating">Nazaj na porabo</button>
+        </div>
+        <div class="bd">
+          <div class="scorewrap">
+            <div style="text-align:center">
+              <div class="scorebig" id="scoreVal">–</div>
+              <div class="scorelbl" id="scoreLbl"></div>
+            </div>
+            <div class="bars" id="ratingBars"></div>
+          </div>
+          <div class="charttitle" style="margin-top:14px">
+            <span class="t" data-i="ch_optact">Optimalno vs dejansko</span>
+            <span class="legend"><span><i style="background:var(--teal)"></i><span data-i="lg_opt">optimalno</span></span><span><i style="background:#fff"></i><span data-i="lg_act">dejansko</span></span></span>
+          </div>
+          <canvas id="chartC" class="chart" height="170"></canvas>
+          <div class="runlist" id="runList"></div>
+        </div>
+      </div>
+
+      <div class="kpis" id="kpis" style="margin-bottom:16px"></div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="charttitle"><span class="t" data-i="ch_terrain">Teren in hitrost</span>
+          <span class="legend"><span><i style="background:#3a5a66"></i><span data-i="ch_elev">višina</span></span><span><i style="background:var(--teal)"></i><span data-i="ch_speed">hitrost</span></span></span></div>
+        <div class="bd"><canvas id="chartA" class="chart" height="200"></canvas><div class="readout" id="readoutA"></div></div>
+      </div>
+
+      <div class="card">
+        <div class="charttitle"><span class="t" data-i="ch_power">Moč na bateriji in SoC</span>
+          <span class="legend"><span><i style="background:var(--hot)"></i><span data-i="ch_cons">poraba</span></span><span><i style="background:var(--regen)"></i><span data-i="ch_regen">regen</span></span><span><i style="background:#cfd8db"></i>SoC</span></span></div>
+        <div class="bd"><canvas id="chartB" class="chart" height="200"></canvas><div class="readout" id="readoutB"></div></div>
+      </div>
+    </div>
+  </div>
+  <footer id="footer"></footer>
+</div>
+
+<!-- NAV OVERLAY -->
+<div id="nav">
+  <div class="navtop">
+    <span id="navMode">GPS</span>
+    <span id="navElapsed">00:00</span>
+    <button id="navEnd" data-i="btn_end">Končaj</button>
+  </div>
+  <div class="navmain">
+    <div class="navdir" id="navDir">–</div>
+    <div class="navnow"><span id="navNow">0</span><small>km/h</small></div>
+    <div class="navtarget"><span data-i="nav_opt">optimalno</span> <b><span id="navTarget">0</span> km/h</b></div>
+    <div class="navlook" id="navLook"></div>
+    <canvas id="navMini" class="navmini"></canvas>
+  </div>
+  <div class="navstats">
+    <div class="navstat"><div class="k" data-i="nav_remain">Do cilja</div><div class="v"><span id="navRemain">0</span> <small>km</small></div></div>
+    <div class="navstat"><div class="k" data-i="nav_eta">ETA</div><div class="v" id="navEta">–</div></div>
+    <div class="navstat"><div class="k" data-i="nav_soc">SoC</div><div class="v"><span id="navSoc">0</span> <small>%</small></div></div>
+    <div class="navstat"><div class="k" data-i="nav_used">Poraba</div><div class="v"><span id="navUsed">0</span> <small>kWh</small></div></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const G=9.81;
+
+/* ===== VEHICLES (i4 M50 = uradni podatki BMW) ===== */
+const VEHICLES={
+ "BMW":{
+  "i4 M50":            {m:2215,batt:80.7,cd:0.25,A:2.31,crr:0.0090,pMax:400,pRegen:195,hp:true,off:true},
+  "i4 eDrive40":       {m:2125,batt:80.7,cd:0.24,A:2.31,crr:0.0088,pMax:250,pRegen:120,hp:true},
+  "iX1 xDrive30":      {m:2010,batt:64.7,cd:0.26,A:2.56,crr:0.0095,pMax:230,pRegen:120,hp:true},
+  "iX3":               {m:2185,batt:74.0,cd:0.29,A:2.60,crr:0.0098,pMax:210,pRegen:120,hp:false},
+ },
+ "Hyundai":{
+  "Ioniq 5 (77,4 kWh)":{m:2100,batt:74.0,cd:0.288,A:2.65,crr:0.0095,pMax:168,pRegen:90,hp:true},
+  "Ioniq 6 (77,4 kWh)":{m:2095,batt:74.0,cd:0.21,A:2.30,crr:0.0088,pMax:168,pRegen:90,hp:true},
+  "Inster (49 kWh)":   {m:1400,batt:46.0,cd:0.30,A:2.30,crr:0.0098,pMax:84,pRegen:55,hp:false},
+ },
+ "MG":{ "ZS EV Long Range":{m:1620,batt:68.3,cd:0.34,A:2.60,crr:0.0105,pMax:115,pRegen:70,hp:false} },
+ "Tesla":{
+  "Model 3 RWD":       {m:1765,batt:57.5,cd:0.219,A:2.22,crr:0.0090,pMax:208,pRegen:70,hp:true},
+  "Model 3 Long Range":{m:1830,batt:75.0,cd:0.219,A:2.22,crr:0.0090,pMax:324,pRegen:90,hp:true},
+  "Model 3 Performance":{m:1850,batt:75.0,cd:0.219,A:2.22,crr:0.0092,pMax:393,pRegen:90,hp:true},
+  "Model Y RWD":       {m:1909,batt:57.5,cd:0.23,A:2.46,crr:0.0095,pMax:220,pRegen:80,hp:true},
+  "Model Y Long Range":{m:1995,batt:75.0,cd:0.23,A:2.46,crr:0.0095,pMax:378,pRegen:90,hp:true},
+  "Model Y Performance":{m:2003,batt:75.0,cd:0.23,A:2.46,crr:0.0097,pMax:393,pRegen:90,hp:true},
+  "Model S":           {m:2069,batt:95.0,cd:0.208,A:2.34,crr:0.0090,pMax:493,pRegen:100,hp:true},
+  "Model S Plaid":     {m:2162,batt:95.0,cd:0.208,A:2.34,crr:0.0092,pMax:760,pRegen:100,hp:true},
+  "Model X":           {m:2455,batt:95.0,cd:0.24,A:2.78,crr:0.0098,pMax:493,pRegen:100,hp:true},
+  "Model X Plaid":     {m:2487,batt:95.0,cd:0.24,A:2.78,crr:0.0100,pMax:760,pRegen:100,hp:true},
+ },
+ "Škoda":{
+  "Citigo-e iV":       {m:1235,batt:32.3,cd:0.30,A:2.10,crr:0.0098,pMax:61,pRegen:40,hp:false},
+  "Enyaq 60":          {m:2020,batt:58.0,cd:0.257,A:2.66,crr:0.0095,pMax:132,pRegen:90,hp:false},
+  "Enyaq 85":          {m:2103,batt:77.0,cd:0.257,A:2.66,crr:0.0095,pMax:210,pRegen:100,hp:true},
+  "Enyaq 85x":         {m:2178,batt:77.0,cd:0.257,A:2.66,crr:0.0098,pMax:220,pRegen:100,hp:true},
+  "Enyaq Coupé 85":    {m:2103,batt:77.0,cd:0.234,A:2.62,crr:0.0094,pMax:210,pRegen:100,hp:true},
+  "Elroq 50":          {m:1900,batt:52.0,cd:0.26,A:2.55,crr:0.0094,pMax:125,pRegen:80,hp:false},
+  "Elroq 60":          {m:1960,batt:59.0,cd:0.26,A:2.55,crr:0.0094,pMax:150,pRegen:90,hp:true},
+  "Elroq 85":          {m:2030,batt:77.0,cd:0.26,A:2.55,crr:0.0094,pMax:210,pRegen:100,hp:true},
+ },
+ "Zeekr":{
+  "001":{m:2350,batt:95.0,cd:0.23,A:2.50,crr:0.0098,pMax:400,pRegen:120,hp:true},
+  "X":  {m:2010,batt:64.0,cd:0.29,A:2.55,crr:0.0098,pMax:315,pRegen:100,hp:true},
+  "7X": {m:2340,batt:94.0,cd:0.27,A:2.65,crr:0.0098,pMax:475,pRegen:120,hp:true},
+ }
+};
+const DEFAULT_VEHICLE="BMW i4 M50";
+const FALLBACK={"zagrajec 11":{lat:45.8035,lon:13.7905,label:"Zagrajec"},"komen 78":{lat:45.8160,lon:13.7480,label:"Komen"}};
+
+/* ===== i18n ===== */
+const I18N={
+ sl:{eyebrow:"Kras • Energetski profil vožnje",title1:"EV Eko-vožnja",title2:"/ simulator + navigacija",
+  sub:"Optimalna hitrost za vsak segment, dejansko vreme, GPS navigacija in ocena vožnje",
+  hd_params:"Parametri vožnje",l_vehicle:"Vozilo",l_start:"Začetek",l_dest:"Cilj",l_autow:"Samodejno vreme in veter (online)",
+  l_temp:"Temperatura",l_soc:"Začetni SoC",l_weather:"Vreme / podlaga",w_dry:"Suho",w_rain:"Dež",w_snow:"Sneg",
+  l_wind:"Veter",l_winddir:"Smer (od)",wd_none:"brez",l_pax:"Potniki",l_cargo:"Tovor (kg)",l_climate:"Klima / ogrevanje",c_on:"Vključeno",c_off:"Izključeno",
+  l_style:"Slog",l_vmax:"Maks. hitrost",l_comfort:"Ovinki (g)",btn_run:"Izračunaj optimalno vožnjo",btn_nav:"▶ Navigacija (GPS)",btn_demo:"Demo vožnja (brez GPS)",
+  hd_route:"Trasa · barva = poraba",lg_regen:"regen",lg_low:"nizka",lg_high:"visoka",
+  ch_terrain:"Teren in hitrost",ch_elev:"višina",ch_speed:"hitrost",ch_power:"Moč na bateriji in SoC",ch_cons:"poraba",ch_regen:"regen",
+  data_note:"Trasa: OSRM · Višine in vreme: Open-Meteo · Geokodiranje: Nominatim (OpenStreetMap). Podatki za i4 M50 so uradni (BMW); ostala vozila so modelirane ocene. GPS navigacija deluje le prek HTTPS in ob dovoljenju za lokacijo; sicer uporabi Demo vožnjo.",
+  k_dist:"Razdalja",k_time:"Čas vožnje",k_energy:"Poraba",k_cons:"Povprečje",k_soc:"SoC ob prihodu",k_regen:"Regeneracija",k_avgspeed:"Povp. hitrost",k_climb:"Vzpon / spust",
+  st_geo:"Geokodiranje naslovov…",st_weather:"Pridobivam vreme…",st_route:"Računam traso (OSRM)…",st_elev:"Pridobivam višine…",st_calc:"Optimiziram hitrostni profil…",st_done:"Izračun končan.",
+  st_geofail:"Geokodiranje ni uspelo, uporabljam privzete koordinate Krasa.",st_wx:"Vreme: ",st_err:"Napaka: ",
+  hd_rating:"Ocena vožnje",btn_closerating:"Nazaj na porabo",ch_optact:"Optimalno vs dejansko",lg_opt:"optimalno",lg_act:"dejansko",
+  nav_opt:"optimalno",nav_remain:"Do cilja",nav_eta:"ETA",nav_soc:"SoC",nav_used:"Poraba",btn_end:"Končaj",
+  dir_hold:"OHRANI HITROST",dir_slow:"SPROSTI PLIN",dir_fast:"LAHKO HITREJE",
+  rt_excellent:"Odlično",rt_good:"Dobro",rt_ok:"Solidno",rt_poor:"Lahko bolje",
+  bar_ok:"v območju",bar_fast:"prehitro",bar_slow:"prepočasno",extra:"poraba +",saved:"prihranek",
+  tag_fast:"prehitro",tag_slow:"prepočasno",corner:"ovinek",
+  geo_denied:"Lokacija ni dovoljena. Uporabi Demo vožnjo.",geo_unavail:"GPS ni na voljo v tem okolju. Uporabi Demo vožnjo.",
+  foot:"Model upošteva zračni upor (Cd·A, gostota zraka po temperaturi/višini), kotalni upor, naklon, vztrajnost in omejitev v ovinkih (bočni pospešek). Hitrostni profil je izračunan z nazaj/naprej prehodom; regeneracija je omejena z največjo močjo polnjenja in izkoristkom. Ocene za načrtovanje, ne garancija porabe."},
+ en:{eyebrow:"Karst • Driving energy profile",title1:"EV Eco-drive",title2:"/ simulator + navigation",
+  sub:"Per-segment optimal speed, live weather, GPS navigation and drive rating",
+  hd_params:"Trip parameters",l_vehicle:"Vehicle",l_start:"Start",l_dest:"Destination",l_autow:"Auto weather and wind (online)",
+  l_temp:"Temperature",l_soc:"Start SoC",l_weather:"Weather / surface",w_dry:"Dry",w_rain:"Rain",w_snow:"Snow",
+  l_wind:"Wind",l_winddir:"Dir (from)",wd_none:"none",l_pax:"Passengers",l_cargo:"Cargo (kg)",l_climate:"Climate / heating",c_on:"On",c_off:"Off",
+  l_style:"Style",l_vmax:"Max speed",l_comfort:"Corners (g)",btn_run:"Compute optimal drive",btn_nav:"▶ Navigation (GPS)",btn_demo:"Demo drive (no GPS)",
+  hd_route:"Route · color = consumption",lg_regen:"regen",lg_low:"low",lg_high:"high",
+  ch_terrain:"Terrain and speed",ch_elev:"elevation",ch_speed:"speed",ch_power:"Battery power and SoC",ch_cons:"consumption",ch_regen:"regen",
+  data_note:"Route: OSRM · Elevation and weather: Open-Meteo · Geocoding: Nominatim (OpenStreetMap). i4 M50 figures are official (BMW); other vehicles are modeled estimates. GPS navigation needs HTTPS and location permission; otherwise use Demo drive.",
+  k_dist:"Distance",k_time:"Drive time",k_energy:"Energy used",k_cons:"Average",k_soc:"Arrival SoC",k_regen:"Regenerated",k_avgspeed:"Avg speed",k_climb:"Climb / descent",
+  st_geo:"Geocoding…",st_weather:"Fetching weather…",st_route:"Routing (OSRM)…",st_elev:"Fetching elevation…",st_calc:"Optimizing speed profile…",st_done:"Done.",
+  st_geofail:"Geocoding failed, using default Karst coordinates.",st_wx:"Weather: ",st_err:"Error: ",
+  hd_rating:"Drive rating",btn_closerating:"Back to consumption",ch_optact:"Optimal vs actual",lg_opt:"optimal",lg_act:"actual",
+  nav_opt:"optimal",nav_remain:"To dest.",nav_eta:"ETA",nav_soc:"SoC",nav_used:"Energy",btn_end:"End",
+  dir_hold:"HOLD SPEED",dir_slow:"EASE OFF",dir_fast:"CAN GO FASTER",
+  rt_excellent:"Excellent",rt_good:"Good",rt_ok:"Solid",rt_poor:"Room to improve",
+  bar_ok:"in range",bar_fast:"too fast",bar_slow:"too slow",extra:"energy +",saved:"saved",
+  tag_fast:"too fast",tag_slow:"too slow",corner:"corner",
+  geo_denied:"Location denied. Use Demo drive.",geo_unavail:"GPS unavailable here. Use Demo drive.",
+  foot:"The model accounts for aero drag (Cd·A, air density vs temp/altitude), rolling resistance, gradient, inertia and corner limits (lateral g). The speed profile uses a backward/forward pass; regen is capped by max charge power and efficiency. Planning estimates, not guaranteed consumption."}
+};
+let LANG="sl";
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
+function setLang(l){LANG=l;
+  document.getElementById('lang-sl').classList.toggle('on',l==='sl');
+  document.getElementById('lang-en').classList.toggle('on',l==='en');
+  document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(I18N[l][k]!==undefined)el.textContent=I18N[l][k];});
+  document.getElementById('footer').textContent=t('foot');
+  updateStyleLbl(); if(window.LAST) render(window.LAST);
+}
+
+/* ===== vehicle select ===== */
+(function(){const sel=document.getElementById('vehicle');
+ for(const b in VEHICLES){const og=document.createElement('optgroup');og.label=b;
+   for(const m in VEHICLES[b]){const o=document.createElement('option');o.value=b+" "+m;o.textContent=b+" "+m;og.appendChild(o);}
+   sel.appendChild(og);}
+ sel.value=DEFAULT_VEHICLE;sel.addEventListener('change',showVehInfo);showVehInfo();})();
+function getVehicle(){const v=document.getElementById('vehicle').value;
+ for(const b in VEHICLES)for(const m in VEHICLES[b])if(b+" "+m===v)return{name:v,...VEHICLES[b][m]};
+ return{name:DEFAULT_VEHICLE,...VEHICLES["BMW"]["i4 M50"]};}
+function showVehInfo(){const v=getVehicle();
+ document.getElementById('vehInfo').textContent=`${v.batt} kWh · ${v.m} kg · Cd ${v.cd} · A ${v.A} m² · regen ${v.pRegen} kW`+(v.hp?" · HP":"")+(v.off?" · "+(LANG==='sl'?"uradni":"official"):"");}
+
+/* ===== sliders ===== */
+function bind(id,fmt){const el=document.getElementById(id),out=document.getElementById(id+'V');const u=()=>out.textContent=fmt(+el.value);el.addEventListener('input',u);u();}
+bind('temp',v=>v+" °C");bind('soc',v=>v+" %");bind('wind',v=>v+" km/h");bind('vmax',v=>v+"");bind('alat',v=>(v/100).toFixed(2)+" g");bind('style',v=>v+"");
+document.getElementById('style').addEventListener('input',updateStyleLbl);
+function updateStyleLbl(){const s=+document.getElementById('style').value,sl=LANG==='sl';
+ const lab=s<25?(sl?"maks. doseg":"max range"):s<55?(sl?"uravnoteženo":"balanced"):s<80?(sl?"dinamično":"dynamic"):(sl?"hitro":"fast");
+ document.getElementById('styleLbl').textContent=lab;}
+updateStyleLbl();
+function segSetup(id){const c=document.getElementById(id);c.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{c.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');}));}
+segSetup('weather');segSetup('climate');
+function segVal(id,a){return document.getElementById(id).querySelector('button.on').getAttribute(a);}
+
+/* ===== map ===== */
+let map=L.map('map',{zoomControl:true}).setView([45.816,13.748],12);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19,attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);
+let routeLayer=L.layerGroup().addTo(map),markerLayer=L.layerGroup().addTo(map),cursorMarker=null;
+
+/* ===== geo helpers ===== */
+function hav(a,b){const R=6371000,dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lon-a.lon)*Math.PI/180,la1=a.lat*Math.PI/180,la2=b.lat*Math.PI/180;
+ const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
+function bearing(a,b){const la1=a.lat*Math.PI/180,la2=b.lat*Math.PI/180,dLon=(b.lon-a.lon)*Math.PI/180;
+ const y=Math.sin(dLon)*Math.cos(la2),x=Math.cos(la1)*Math.sin(la2)-Math.sin(la1)*Math.cos(la2)*Math.cos(dLon);return (Math.atan2(y,x)*180/Math.PI+360)%360;}
+async function geocode(q){const c=q.trim().match(/^(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)$/);
+ if(c)return{lat:+c[1],lon:+c[2],label:q};
+ const url='https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=si&q='+encodeURIComponent(q+', Slovenija');
+ const r=await fetch(url,{headers:{'Accept-Language':'sl'}});const j=await r.json();
+ if(j&&j.length)return{lat:+j[0].lat,lon:+j[0].lon,label:j[0].display_name.split(',').slice(0,2).join(',')};
+ const fb=FALLBACK[q.trim().toLowerCase()];if(fb)return{...fb,_fb:true};throw new Error('geocode '+q);}
+async function fetchWeather(lat,lon){
+ const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m&timezone=auto`;
+ const r=await fetch(url);const j=await r.json();
+ return{temp:j.current.temperature_2m,wind:j.current.wind_speed_10m,dir:j.current.wind_direction_10m};}
+async function route(a,b){const url=`https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`;
+ const r=await fetch(url);const j=await r.json();if(!j.routes||!j.routes.length)throw new Error('OSRM');
+ return j.routes[0].geometry.coordinates.map(c=>({lat:c[1],lon:c[0]}));}
+function resample(pts,step){const out=[pts[0]];let acc=0;
+ for(let i=1;i<pts.length;i++){let segLen=hav(pts[i-1],pts[i]);if(segLen<1e-6)continue;let from=pts[i-1];
+  while(acc+segLen>=step){const f=(step-acc)/segLen;const np={lat:from.lat+(pts[i].lat-from.lat)*f,lon:from.lon+(pts[i].lon-from.lon)*f};out.push(np);from=np;segLen=hav(from,pts[i]);acc=0;}
+  acc+=segLen;}
+ out.push(pts[pts.length-1]);return out;}
+async function fetchElevations(pts){const out=new Array(pts.length).fill(0),CH=100;
+ for(let i=0;i<pts.length;i+=CH){const ch=pts.slice(i,i+CH);
+  const lat=ch.map(p=>p.lat.toFixed(6)).join(','),lon=ch.map(p=>p.lon.toFixed(6)).join(',');
+  const r=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);const j=await r.json();
+  if(j&&j.elevation)j.elevation.forEach((e,k)=>out[i+k]=e);}
+ const sm=out.slice();for(let i=0;i<out.length;i++){let s=0,n=0;for(let k=-2;k<=2;k++){const x=i+k;if(x>=0&&x<out.length){s+=out[x];n++;}}sm[i]=s/n;}return sm;}
+function curveRadius(p0,p1,p2,latRef){const mLat=111320,mLon=111320*Math.cos(latRef*Math.PI/180);const X=p=>({x:p.lon*mLon,y:p.lat*mLat});
+ const A=X(p0),B=X(p1),C=X(p2);const a=Math.hypot(B.x-C.x,B.y-C.y),b=Math.hypot(A.x-C.x,A.y-C.y),c=Math.hypot(A.x-B.x,A.y-B.y);
+ const area=Math.abs((B.x-A.x)*(C.y-A.y)-(C.x-A.x)*(B.y-A.y))/2;if(area<1e-3)return 1e6;return (a*b*c)/(4*area);}
+
+/* ===== physics ===== */
+function airDensity(t,el){const T=t+273.15,p=101325*Math.pow(1-2.25577e-5*Math.max(0,el),5.25588);return p/(287.05*T);}
+function auxPower(t,on,hp){let base=350;if(!on)return base;let h=0;
+ if(t<19){const need=(19-t)*230+500;h=hp?Math.min(4200,need*0.6):Math.min(6000,need);}else if(t>24){h=Math.min(2600,(t-24)*170+500);}return base+h;}
+function ecoSpeed(v,rho,m,crr,Paux){let best=15,bE=1e18;for(let s=5;s<=42;s+=0.25){const F=0.5*rho*v.cd*v.A*s*s+crr*m*G;const J=F/0.88+Paux/s;if(J<bE){bE=J;best=s;}}return best;}
+
+function buildContext(p){
+ const veh=p.veh,N=p.pts.length,m=veh.m+p.pax*75+p.cargo;
+ const rho=airDensity(p.temp,p.elev.reduce((a,b)=>a+b,0)/N);
+ let crr=veh.crr;if(p.weather==='rain')crr+=0.0025;if(p.weather==='snow')crr+=0.010;if(p.temp<5)crr+=0.0010;
+ const Paux=auxPower(p.temp,p.climate,veh.hp);
+ let aLat=(p.alatRaw/100)*G;if(p.weather==='rain')aLat*=0.8;if(p.weather==='snow')aLat*=0.45;
+ let aAccel=1.4,aDecel=2.2;if(p.weather==='rain')aDecel=1.8;if(p.weather==='snow'){aAccel=0.8;aDecel=1.1;}
+ const ds=new Array(N-1),grade=new Array(N-1),head=new Array(N-1),distKm=new Array(N);distKm[0]=0;let totalLen=0;
+ for(let i=0;i<N-1;i++){ds[i]=Math.max(1,hav(p.pts[i],p.pts[i+1]));totalLen+=ds[i];distKm[i+1]=totalLen/1000;
+  grade[i]=Math.atan2(p.elev[i+1]-p.elev[i],ds[i]);head[i]=bearing(p.pts[i],p.pts[i+1]);}
+ const latRef=p.pts[Math.floor(N/2)].lat,vmax=p.vmax/3.6,eco=ecoSpeed(veh,rho,m,crr,Paux);
+ const targetCruise=eco+(vmax-eco)*(p.style/100);
+ const vCorner=new Array(N).fill(vmax);
+ for(let i=1;i<N-1;i++)vCorner[i]=Math.min(vmax,Math.sqrt(aLat*curveRadius(p.pts[i-1],p.pts[i],p.pts[i+1],latRef)));
+ const vlim=new Array(N);for(let i=0;i<N;i++)vlim[i]=Math.min(targetCruise,vmax,vCorner[i]);
+ return{veh,N,m,rho,crr,Paux,aAccel,aDecel,ds,grade,head,distKm,totalLen,latRef,vmax,eco,targetCruise,vCorner,vlim,
+   pRegenMax:veh.pRegen*1000,battCapJ:veh.batt*3.6e6,soc:p.soc,windFrom:p.windDir,windMs:p.wind/3.6,elev:p.elev,pts:p.pts,weather:p.weather};
+}
+function optimalProfile(ctx){const N=ctx.N,vb=new Array(N);vb[N-1]=0;
+ for(let i=N-2;i>=0;i--)vb[i]=Math.min(ctx.vlim[i],Math.sqrt(vb[i+1]*vb[i+1]+2*ctx.aDecel*ctx.ds[i]));
+ const v=new Array(N);v[0]=0;for(let i=1;i<N;i++)v[i]=Math.min(vb[i],Math.sqrt(v[i-1]*v[i-1]+2*ctx.aAccel*ctx.ds[i-1]));return v;}
+function energyProfile(ctx,v,from,to){from=from||0;to=(to==null?ctx.N-1:to);const N=ctx.N;
+ const segPower=new Array(N-1).fill(0),powKW=new Array(N-1).fill(0),socArr=new Array(N).fill(null),spdKmh=new Array(N).fill(0),cumTime=new Array(N).fill(0),cumWh=new Array(N).fill(0);
+ let battJ=0,regenJ=0,time=0,climb=0,descent=0,socJ=ctx.soc/100*ctx.battCapJ;
+ socArr[from]=socJ/ctx.battCapJ*100;spdKmh[from]=v[from]*3.6;
+ for(let i=from;i<to;i++){const v1=v[i],v2=v[i+1],dsi=ctx.ds[i],va=Math.max(0.3,(v1+v2)/2);
+  const a=(v2*v2-v1*v1)/(2*dsi),th=ctx.grade[i],dz=ctx.elev[i+1]-ctx.elev[i];if(dz>0)climb+=dz;else descent-=dz;
+  let vRel=va;if(ctx.windFrom>=0)vRel=va+ctx.windMs*Math.cos((ctx.windFrom-ctx.head[i])*Math.PI/180);
+  const Faero=0.5*ctx.rho*ctx.veh.cd*ctx.veh.A*vRel*Math.abs(vRel),Froll=ctx.crr*ctx.m*G*Math.cos(th),Fgr=ctx.m*G*Math.sin(th),Fac=ctx.m*a;
+  const Pw=(Faero+Froll+Fgr+Fac)*va,dt=dsi/va;time+=dt;let Pb;
+  if(Pw>=0)Pb=Pw/0.88+ctx.Paux;else{let rg=-Pw*0.70;if(rg>ctx.pRegenMax)rg=ctx.pRegenMax;regenJ+=rg*dt;Pb=ctx.Paux-rg;}
+  const e=Pb*dt;battJ+=e;socJ-=e;segPower[i]=powKW[i]=Pb/1000;cumTime[i+1]=time;cumWh[i+1]=battJ/3600;
+  socArr[i+1]=Math.max(0,socJ)/ctx.battCapJ*100;spdKmh[i+1]=v2*3.6;}
+ return{battJ,Wh:battJ/3600,regenJ,regenKwh:regenJ/3.6e6,time,segPower,powKW,socArr,spdKmh,cumTime,cumWh,climb,descent};}
+
+function simulate(p){const ctx=buildContext(p);const v=optimalProfile(ctx);const ep=energyProfile(ctx,v);
+ const km=ctx.totalLen/1000,grossWh=ep.Wh+ep.regenKwh*1000;
+ return{ctx,vOptMs:v,pts:ctx.pts,elev:ctx.elev,ds:ctx.ds,distKm:ctx.distKm,
+  segPower:ep.segPower,powKW:ep.powKW,socArr:ep.socArr,spdKmh:ep.spdKmh,cumTime:ep.cumTime,cumWh:ep.cumWh,
+  km,Wh:ep.Wh,whkm:ep.Wh/km,time:ep.time,regenKwh:ep.regenKwh,regenPct:grossWh>0?(ep.regenKwh*1000)/grossWh*100:0,
+  socEnd:ep.socArr[ctx.N-1],socStart:p.soc,eco:ctx.eco*3.6,climb:ep.climb,descent:ep.descent,avgSpeed:km/(ep.time/3600)};}
+
+/* ===== RUN ===== */
+const statusEl=document.getElementById('status');
+function setStatus(m,c){statusEl.textContent=m;statusEl.className='status '+(c||'');}
+document.getElementById('run').addEventListener('click',run);
+async function run(){const btn=document.getElementById('run');btn.disabled=true;
+ try{
+  const sQ=document.getElementById('start').value,dQ=document.getElementById('dest').value;
+  setStatus(t('st_geo'));let usedFb=false;
+  const A=await geocode(sQ),B=await geocode(dQ);if(A._fb||B._fb)usedFb=true;
+  if(document.getElementById('autoWeather').checked){
+   try{setStatus(t('st_weather'));const w=await fetchWeather(A.lat,A.lon);
+    const temp=Math.round(Math.max(-15,Math.min(40,w.temp)));document.getElementById('temp').value=temp;document.getElementById('tempV').textContent=temp+" °C";
+    const wind=Math.round(Math.max(0,Math.min(80,w.wind)));document.getElementById('wind').value=wind;document.getElementById('windV').textContent=wind+" km/h";
+    const dir=(Math.round(w.dir/45)*45)%360;document.getElementById('winddir').value=String(dir);
+    setStatus(t('st_wx')+`${temp} °C, ${LANG==='sl'?'veter':'wind'} ${wind} km/h`,'ok');
+   }catch(e){/* keep manual */}
+  }
+  setStatus(t('st_route'));const raw=await route(A,B);
+  let len=0;for(let i=1;i<raw.length;i++)len+=hav(raw[i-1],raw[i]);
+  const pts=resample(raw,Math.max(15,len/700));
+  setStatus(t('st_elev'));const elev=await fetchElevations(pts);
+  setStatus(t('st_calc'));
+  const params={veh:getVehicle(),pts,elev,
+   temp:+document.getElementById('temp').value,soc:+document.getElementById('soc').value,
+   weather:segVal('weather','data-w'),climate:segVal('climate','data-c')==='on',
+   wind:+document.getElementById('wind').value,windDir:+document.getElementById('winddir').value,
+   pax:Math.max(1,+document.getElementById('pax').value||1),cargo:Math.max(0,+document.getElementById('cargo').value||0),
+   style:+document.getElementById('style').value,vmax:+document.getElementById('vmax').value,alatRaw:+document.getElementById('alat').value};
+  const res=simulate(params);res.A=A;res.B=B;window.LAST=res;window.CTX=res.ctx;
+  hideRating();render(res);
+  document.getElementById('navBtn').disabled=false;document.getElementById('demoBtn').disabled=false;
+  if(!document.getElementById('status').classList.contains('ok'))setStatus(usedFb?t('st_geofail'):t('st_done'),usedFb?'err':'ok');
+ }catch(e){console.error(e);setStatus(t('st_err')+e.message,'err');}finally{btn.disabled=false;}
+}
+
+/* ===== color ===== */
+function powColor(kw){if(kw<0){const f=Math.min(1,-kw/40);return lerpC([39,211,181],[110,232,127],f);}
+ const f=Math.min(1,kw/55);return f<0.5?lerpC([39,211,181],[243,161,74],f*2):lerpC([243,161,74],[255,106,82],(f-0.5)*2);}
+function lerpC(a,b,f){return `rgb(${Math.round(a[0]+(b[0]-a[0])*f)},${Math.round(a[1]+(b[1]-a[1])*f)},${Math.round(a[2]+(b[2]-a[2])*f)})`;}
+
+/* ===== render ===== */
+function render(r){
+ const fmtT=s=>{const m=Math.round(s/60);return m>=60?`${Math.floor(m/60)}h ${m%60}min`:`${m} min`;};
+ const sl=LANG==='sl';
+ const kpis=[
+  {k:t('k_dist'),v:r.km.toFixed(1),u:'km'},
+  {k:t('k_time'),v:fmtT(r.time),u:''},
+  {k:t('k_energy'),v:(r.Wh/1000).toFixed(2),u:'kWh',c:'warn'},
+  {k:t('k_cons'),v:Math.round(r.whkm),u:'Wh/km',c:'warn'},
+  {k:t('k_soc'),v:r.socEnd.toFixed(0),u:'%',c:r.socEnd<15?'warn':'',sub:`${r.socStart}% → ${r.socEnd.toFixed(0)}%`},
+  {k:t('k_regen'),v:r.regenKwh.toFixed(2),u:'kWh',c:'regen',sub:`${r.regenPct.toFixed(0)}% ${sl?'vrnjeno':'recovered'}`},
+  {k:t('k_avgspeed'),v:r.avgSpeed.toFixed(0),u:'km/h',sub:`${sl?'eko':'eco'} ${r.eco.toFixed(0)} km/h`},
+  {k:t('k_climb'),v:`${Math.round(r.climb)}`,u:'m',sub:`↓ ${Math.round(r.descent)} m`},
+ ];
+ document.getElementById('kpis').innerHTML=kpis.map(x=>`<div class="kpi ${x.c||''}"><div class="k">${x.k}</div><div class="v">${x.v} <small>${x.u}</small></div>${x.sub?`<div class="v2">${x.sub}</div>`:''}</div>`).join('');
+ colorByConsumption(r);
+ const bounds=L.latLngBounds(r.pts.map(p=>[p.lat,p.lon]));map.fitBounds(bounds,{padding:[24,24]});
+ drawChartA(r);drawChartB(r);
+ document.getElementById('readoutA').textContent='';document.getElementById('readoutB').textContent='';
+}
+function drawMarkers(r){markerLayer.clearLayers();
+ L.circleMarker([r.A.lat,r.A.lon],{radius:7,color:'#6ee87f',fillColor:'#6ee87f',fillOpacity:1,weight:2}).bindTooltip(r.A.label).addTo(markerLayer);
+ L.circleMarker([r.B.lat,r.B.lon],{radius:7,color:'#ff6a52',fillColor:'#ff6a52',fillOpacity:1,weight:2}).bindTooltip(r.B.label).addTo(markerLayer);}
+function colorByConsumption(r){routeLayer.clearLayers();
+ for(let i=0;i<r.pts.length-1;i++)L.polyline([[r.pts[i].lat,r.pts[i].lon],[r.pts[i+1].lat,r.pts[i+1].lon]],{color:powColor(r.segPower[i]),weight:5,opacity:.9}).addTo(routeLayer);
+ drawMarkers(r);
+ document.getElementById('mapTitle').textContent=t('hd_route');
+ document.getElementById('mapLegend').style.display='';}
+
+/* ===== charts ===== */
+function setup(cv,h){const dpr=window.devicePixelRatio||1,w=cv.clientWidth;cv.width=w*dpr;cv.height=h*dpr;cv.style.height=h+'px';
+ const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,1,0);return{ctx,w,h};}
+const PAD={l:46,r:46,t:14,b:24};
+function xMap(km,mx,w){return PAD.l+(km/mx)*(w-PAD.l-PAD.r);}
+function niceStep(r,n){const raw=r/n,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p;return (f<1.5?1:f<3?2:f<7?5:10)*p;}
+function gridX(ctx,mx,w,h){ctx.strokeStyle='#203840';ctx.fillStyle='#5f7882';ctx.font='10px JetBrains Mono';ctx.lineWidth=1;
+ const st=niceStep(mx,6);for(let k=0;k<=mx+1e-6;k+=st){const x=xMap(k,mx,w);ctx.beginPath();ctx.moveTo(x,PAD.t);ctx.lineTo(x,h-PAD.b);ctx.stroke();
+  ctx.textAlign='center';ctx.fillText(k.toFixed(st<1?1:0),x,h-PAD.b+13);}}
+function drawChartA(r){const cv=document.getElementById('chartA'),{ctx,w,h}=setup(cv,200);ctx.clearRect(0,0,w,h);
+ const mx=r.km,elev=r.elev,spd=r.spdKmh,eMin=Math.min(...elev),eMax=Math.max(...elev),eR=Math.max(10,eMax-eMin),sMax=Math.max(60,Math.max(...spd)*1.1);
+ gridX(ctx,mx,w,h);const yE=v=>(h-PAD.b)-((v-eMin)/eR)*(h-PAD.t-PAD.b);
+ ctx.beginPath();ctx.moveTo(PAD.l,h-PAD.b);for(let i=0;i<elev.length;i++)ctx.lineTo(xMap(r.distKm[i],mx,w),yE(elev[i]));ctx.lineTo(xMap(mx,mx,w),h-PAD.b);ctx.closePath();
+ const g=ctx.createLinearGradient(0,PAD.t,0,h-PAD.b);g.addColorStop(0,'rgba(58,90,102,.55)');g.addColorStop(1,'rgba(58,90,102,.08)');ctx.fillStyle=g;ctx.fill();
+ ctx.strokeStyle='#3a5a66';ctx.lineWidth=1.2;ctx.stroke();
+ const yS=v=>(h-PAD.b)-(v/sMax)*(h-PAD.t-PAD.b);ctx.beginPath();
+ for(let i=0;i<spd.length;i++){const x=xMap(r.distKm[i],mx,w),y=yS(spd[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.strokeStyle='#27d3b5';ctx.lineWidth=2;ctx.stroke();
+ ctx.fillStyle='#5f7882';ctx.textAlign='right';ctx.fillText(Math.round(eMax)+'m',PAD.l-6,PAD.t+8);ctx.fillText(Math.round(eMin)+'m',PAD.l-6,h-PAD.b);
+ ctx.textAlign='left';ctx.fillStyle='#27d3b5';ctx.fillText(Math.round(sMax)+'km/h',w-PAD.r+4,PAD.t+8);
+ r._A={yE,yS,mx,w,h};attachCursor(cv,r);}
+function drawChartB(r){const cv=document.getElementById('chartB'),{ctx,w,h}=setup(cv,200);ctx.clearRect(0,0,w,h);
+ const mx=r.km,pw=r.powKW,soc=r.socArr,pMax=Math.max(20,Math.max(...pw)),pMin=Math.min(-5,Math.min(...pw)),pR=pMax-pMin;
+ gridX(ctx,mx,w,h);const yP=v=>(h-PAD.b)-((v-pMin)/pR)*(h-PAD.t-PAD.b),z=yP(0);
+ for(let i=0;i<pw.length;i++){const x1=xMap(r.distKm[i],mx,w),x2=xMap(r.distKm[i+1],mx,w),v=pw[i],y=yP(v);
+  ctx.fillStyle=v>=0?(v>30?'rgba(243,161,74,.6)':'rgba(39,211,181,.45)'):'rgba(110,232,127,.6)';ctx.fillRect(x1,Math.min(y,z),Math.max(0.6,x2-x1),Math.abs(y-z));}
+ ctx.strokeStyle='#34525c';ctx.beginPath();ctx.moveTo(PAD.l,z);ctx.lineTo(w-PAD.r,z);ctx.stroke();
+ const yS=v=>(h-PAD.b)-(v/100)*(h-PAD.t-PAD.b);ctx.beginPath();
+ for(let i=0;i<soc.length;i++){const x=xMap(r.distKm[i],mx,w),y=yS(soc[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.strokeStyle='#cfd8db';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.stroke();ctx.setLineDash([]);
+ ctx.fillStyle='#5f7882';ctx.textAlign='right';ctx.fillText(Math.round(pMax)+'kW',PAD.l-6,PAD.t+8);ctx.fillText('0',PAD.l-6,z+3);
+ ctx.textAlign='left';ctx.fillStyle='#cfd8db';ctx.fillText('100%',w-PAD.r+4,PAD.t+8);ctx.fillText('0%',w-PAD.r+4,h-PAD.b);
+ r._B={yP,yS,z,mx,w,h};}
+function attachCursor(cv,r){cv.onmousemove=e=>{const rect=cv.getBoundingClientRect(),x=e.clientX-rect.left,w=r._A.w;
+  let km=Math.max(0,Math.min(r.km,((x-PAD.l)/(w-PAD.l-PAD.r))*r.km)),idx=0,best=1e9;
+  for(let i=0;i<r.distKm.length;i++){const d=Math.abs(r.distKm[i]-km);if(d<best){best=d;idx=i;}}showCursor(r,idx);};
+ cv.onmouseleave=()=>{drawChartA(r);drawChartB(r);document.getElementById('readoutA').textContent='';document.getElementById('readoutB').textContent='';if(cursorMarker){markerLayer.removeLayer(cursorMarker);cursorMarker=null;}};}
+document.getElementById('chartB').onmousemove=e=>{const r=window.LAST;if(!r)return;const cv=document.getElementById('chartB'),rect=cv.getBoundingClientRect(),x=e.clientX-rect.left,w=r._B.w;
+ let km=Math.max(0,Math.min(r.km,((x-PAD.l)/(w-PAD.l-PAD.r))*r.km)),idx=0,best=1e9;for(let i=0;i<r.distKm.length;i++){const d=Math.abs(r.distKm[i]-km);if(d<best){best=d;idx=i;}}showCursor(r,idx);};
+document.getElementById('chartB').onmouseleave=()=>{const r=window.LAST;if(!r)return;drawChartA(r);drawChartB(r);document.getElementById('readoutA').textContent='';document.getElementById('readoutB').textContent='';if(cursorMarker){markerLayer.removeLayer(cursorMarker);cursorMarker=null;}};
+function showCursor(r,idx){drawChartA(r);drawChartB(r);const ca=document.getElementById('chartA').getContext('2d'),cb=document.getElementById('chartB').getContext('2d'),x=xMap(r.distKm[idx],r.km,r._A.w);
+ [[ca,r._A],[cb,r._B]].forEach(([ctx,o])=>{ctx.strokeStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.moveTo(x,PAD.t);ctx.lineTo(x,o.h-PAD.b);ctx.stroke();});
+ ca.fillStyle='#27d3b5';ca.beginPath();ca.arc(x,r._A.yS(r.spdKmh[idx]),3.5,0,7);ca.fill();
+ const pw=r.powKW[Math.min(idx,r.powKW.length-1)];cb.fillStyle='#cfd8db';cb.beginPath();cb.arc(x,r._B.yS(r.socArr[idx]),3.5,0,7);cb.fill();
+ const sl=LANG==='sl';
+ document.getElementById('readoutA').innerHTML=`<b>${r.distKm[idx].toFixed(2)} km</b> · ${sl?'višina':'elev'} ${Math.round(r.elev[idx])} m · ${sl?'hitrost':'speed'} <b>${Math.round(r.spdKmh[idx])} km/h</b>`;
+ document.getElementById('readoutB').innerHTML=`<b>${r.distKm[idx].toFixed(2)} km</b> · ${sl?'moč':'power'} <b>${pw.toFixed(1)} kW</b> ${pw<0?'(regen)':''} · SoC <b>${r.socArr[idx].toFixed(1)}%</b>`;
+ if(cursorMarker)markerLayer.removeLayer(cursorMarker);
+ cursorMarker=L.circleMarker([r.pts[idx].lat,r.pts[idx].lon],{radius:6,color:'#fff',fillColor:'#27d3b5',fillOpacity:1,weight:2}).addTo(markerLayer);}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+const navEl=document.getElementById('nav');
+let NAV=null;
+document.getElementById('navBtn').addEventListener('click',()=>startNav('gps'));
+document.getElementById('demoBtn').addEventListener('click',()=>startNav('demo'));
+document.getElementById('navEnd').addEventListener('click',()=>finishNav());
+
+function snapIdx(r,lat,lon){let best=1e18,bi=0;const p={lat,lon};
+ for(let i=0;i<r.pts.length;i++){const d=hav(r.pts[i],p);if(d<best){best=d;bi=i;}}return{idx:bi,dist:best};}
+
+function startNav(mode){const r=window.LAST;if(!r)return;
+ NAV={mode,r,ctx:window.CTX,curIdx:0,maxIdx:0,vActMs:new Array(r.pts.length).fill(null),
+   startT:Date.now(),timer:null,watch:null,lastPos:null,lastT:null,demoIdx:0,demoArr:null};
+ navEl.classList.add('show');document.getElementById('navMode').textContent=mode==='gps'?'GPS':'DEMO';
+ setupNavMini();updateNavMini(0,0);
+ if(mode==='demo'){NAV.demoArr=buildDemoSpeeds(r,NAV.ctx);NAV.timer=setInterval(demoTick,55);}
+ else startGps();
+ NAV.elapsedTimer=setInterval(()=>{const s=Math.floor((Date.now()-NAV.startT)/1000);document.getElementById('navElapsed').textContent=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;},500);
+}
+function startGps(){if(!('geolocation'in navigator)){document.getElementById('navDir').textContent=t('geo_unavail');return;}
+ NAV.watch=navigator.geolocation.watchPosition(onGps,onGpsErr,{enableHighAccuracy:true,maximumAge:1000,timeout:9000});}
+function onGpsErr(err){document.getElementById('navDir').textContent=err.code===1?t('geo_denied'):t('geo_unavail');document.getElementById('navDir').style.background='rgba(255,106,82,.18)';document.getElementById('navDir').style.color='#ff6a52';}
+function onGps(pos){const r=NAV.r,now=pos.timestamp||Date.now();let spd=null;
+ if(pos.coords.speed!=null&&pos.coords.speed>=0)spd=pos.coords.speed*3.6;
+ else if(NAV.lastPos){const d=hav(NAV.lastPos,{lat:pos.coords.latitude,lon:pos.coords.longitude}),dt=(now-NAV.lastT)/1000;if(dt>0)spd=(d/dt)*3.6;}
+ NAV.lastPos={lat:pos.coords.latitude,lon:pos.coords.longitude};NAV.lastT=now;
+ const s=snapIdx(r,pos.coords.latitude,pos.coords.longitude);NAV.curIdx=s.idx;if(s.idx>NAV.maxIdx)NAV.maxIdx=s.idx;
+ if(spd!=null)NAV.vActMs[s.idx]=spd/3.6;
+ stepNav(s.idx,spd==null?r.spdKmh[s.idx]:spd);
+ if(s.idx>=r.pts.length-2||hav({lat:pos.coords.latitude,lon:pos.coords.longitude},r.B)<55)finishNav();
+}
+function buildDemoSpeeds(r,ctx){const N=r.pts.length,arr=new Array(N);
+ for(let i=0;i<N;i++){const opt=r.spdKmh[i];let f=1+0.10*Math.sin(i*0.06)+0.06*Math.sin(i*0.017+1.3);
+  if(opt<ctx.targetCruise*3.6*0.7)f=1.22+0.05*Math.sin(i*0.3); // corners: too fast
+  else if(Math.sin(i*0.04)>0.6)f=0.84; // some straights: too slow
+  arr[i]=Math.max(0,opt*f);}
+ arr[0]=0;arr[N-1]=0;return arr;}
+function demoTick(){const r=NAV.r;NAV.demoIdx+=1;const i=Math.min(NAV.demoIdx,r.pts.length-1);
+ NAV.curIdx=i;NAV.maxIdx=i;NAV.vActMs[i]=NAV.demoArr[i]/3.6;
+ stepNav(i,NAV.demoArr[i]);
+ if(i>=r.pts.length-1)finishNav();}
+function stepNav(idx,vActKmh){const r=NAV.r,opt=r.spdKmh[idx];
+ document.getElementById('navNow').textContent=Math.round(vActKmh);
+ document.getElementById('navTarget').textContent=Math.round(opt);
+ const dev=vActKmh-opt,dir=document.getElementById('navDir');
+ if(dev>6){dir.textContent=t('dir_slow');dir.style.background='rgba(255,106,82,.18)';dir.style.color='#ff6a52';}
+ else if(dev<-6){dir.textContent=t('dir_fast');dir.style.background='rgba(74,168,255,.18)';dir.style.color='#4aa8ff';}
+ else{dir.textContent=t('dir_hold');dir.style.background='rgba(110,232,127,.16)';dir.style.color='#6ee87f';}
+ // lookahead 300m
+ let look='';const d0=r.distKm[idx];let minOpt=opt,minAt=null;
+ for(let j=idx+1;j<r.pts.length;j++){if((r.distKm[j]-d0)*1000>320)break;if(r.spdKmh[j]<minOpt){minOpt=r.spdKmh[j];minAt=j;}}
+ if(minAt!=null&&minOpt<opt-8){const dist=Math.round((r.distKm[minAt]-d0)*1000);look=`↘ ${Math.round(minOpt)} km/h ${LANG==='sl'?'čez':'in'} ${dist} m`;}
+ document.getElementById('navLook').textContent=look;
+ const remKm=Math.max(0,r.km-r.distKm[idx]);document.getElementById('navRemain').textContent=remKm.toFixed(1);
+ const etaS=Math.max(0,r.time-r.cumTime[idx]);document.getElementById('navEta').textContent=`${Math.floor(etaS/60)}:${String(Math.round(etaS%60)).padStart(2,'0')}`;
+ document.getElementById('navSoc').textContent=r.socArr[idx].toFixed(0);
+ document.getElementById('navUsed').textContent=(r.cumWh[idx]/1000).toFixed(2);
+ updateNavMini(idx,minAt);}
+
+/* nav mini map */
+let NAVPROJ=null;
+function setupNavMini(){const r=NAV.r;let laMin=1e9,laMax=-1e9,loMin=1e9,loMax=-1e9;
+ r.pts.forEach(p=>{laMin=Math.min(laMin,p.lat);laMax=Math.max(laMax,p.lat);loMin=Math.min(loMin,p.lon);loMax=Math.max(loMax,p.lon);});
+ NAVPROJ={laMin,laMax,loMin,loMax};}
+function updateNavMini(idx,lookIdx){const cv=document.getElementById('navMini');const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=120;
+ cv.width=w*dpr;cv.height=h*dpr;const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+ const r=NAV.r,P=NAVPROJ,pad=12,latRef=(P.laMin+P.laMax)/2,kx=Math.cos(latRef*Math.PI/180);
+ const dLon=(P.loMax-P.loMin)*kx||1e-6,dLat=(P.laMax-P.laMin)||1e-6,sc=Math.min((w-2*pad)/dLon,(h-2*pad)/dLat);
+ const X=p=>pad+((p.lon-P.loMin)*kx)*sc,Y=p=>h-pad-((p.lat-P.laMin))*sc;
+ ctx.lineWidth=2.5;ctx.strokeStyle='#27424c';ctx.beginPath();for(let i=0;i<r.pts.length;i++){const x=X(r.pts[i]),y=Y(r.pts[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();
+ ctx.strokeStyle='#27d3b5';ctx.beginPath();for(let i=0;i<=idx;i++){const x=X(r.pts[i]),y=Y(r.pts[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();
+ if(lookIdx!=null){ctx.fillStyle='#f3a14a';ctx.beginPath();ctx.arc(X(r.pts[lookIdx]),Y(r.pts[lookIdx]),4,0,7);ctx.fill();}
+ ctx.fillStyle='#ff6a52';ctx.beginPath();ctx.arc(X(r.B),Y(r.B),4,0,7);ctx.fill();
+ ctx.fillStyle='#fff';ctx.strokeStyle='#27d3b5';ctx.lineWidth=2;ctx.beginPath();ctx.arc(X(r.pts[idx]),Y(r.pts[idx]),6,0,7);ctx.fill();ctx.stroke();}
+
+/* ===== finish + rating ===== */
+function finishNav(){if(!NAV)return;
+ if(NAV.timer)clearInterval(NAV.timer);if(NAV.elapsedTimer)clearInterval(NAV.elapsedTimer);
+ if(NAV.watch!=null)navigator.geolocation.clearWatch(NAV.watch);
+ const r=NAV.r,ctx=NAV.ctx,N=r.pts.length,maxIdx=Math.max(2,NAV.maxIdx);
+ // fill gaps in vActMs over [0,maxIdx]
+ const vAct=NAV.vActMs.slice();vAct[0]=vAct[0]??0;
+ let lastK=0;if(vAct[0]==null)vAct[0]=0;
+ for(let i=1;i<=maxIdx;i++){if(vAct[i]==null){let j=i+1;while(j<=maxIdx&&vAct[j]==null)j++;
+   const a=vAct[lastK]??r.vOptMs[lastK];const b=(j<=maxIdx&&vAct[j]!=null)?vAct[j]:(r.vOptMs[i]);
+   vAct[i]=a+(b-a)*((i-lastK)/Math.max(1,(j-lastK)));}else lastK=i;}
+ for(let i=0;i<=maxIdx;i++)if(vAct[i]==null)vAct[i]=r.vOptMs[i];
+ // energy compare
+ const epAct=energyProfile(ctx,vAct,0,maxIdx),epOpt=energyProfile(ctx,r.vOptMs,0,maxIdx);
+ const extraPct=epOpt.Wh>0?(epAct.Wh-epOpt.Wh)/epOpt.Wh*100:0;
+ // deviations weighted by distance
+ let okD=0,fastD=0,slowD=0,sumAbs=0,sumD=0,tot=0;const cls=new Array(maxIdx).fill(0);
+ for(let i=0;i<maxIdx;i++){const d=ctx.ds[i],va=vAct[i]*3.6,vo=r.spdKmh[i],dev=va-vo;
+  tot+=d;sumAbs+=Math.abs(dev)*d;sumD+=dev*d;
+  if(dev>6){fastD+=d;cls[i]=1;}else if(dev<-6){slowD+=d;cls[i]=-1;}else{okD+=d;}}
+ const meanAbs=tot>0?sumAbs/tot:0;
+ let score=Math.round(Math.max(0,Math.min(100,100-meanAbs*2.2-Math.max(0,extraPct)*0.8)));
+ navEl.classList.remove('show');
+ showRating(r,{score,extraPct,okPct:okD/tot*100,fastPct:fastD/tot*100,slowPct:slowD/tot*100,cls,vAct,maxIdx,actWh:epAct.Wh,optWh:epOpt.Wh});
+ NAV=null;
+}
+function hideRating(){document.getElementById('ratingCard').style.display='none';}
+document.getElementById('closeRating').addEventListener('click',()=>{hideRating();if(window.LAST){colorByConsumption(window.LAST);map.fitBounds(L.latLngBounds(window.LAST.pts.map(p=>[p.lat,p.lon])),{padding:[24,24]});}});
+function showRating(r,R){
+ const card=document.getElementById('ratingCard');card.style.display='';
+ const sl=LANG==='sl';
+ document.getElementById('scoreVal').textContent=R.score;
+ const col=R.score>=85?'#6ee87f':R.score>=70?'#27d3b5':R.score>=50?'#f3a14a':'#ff6a52';
+ document.getElementById('scoreVal').style.color=col;
+ document.getElementById('scoreLbl').textContent=R.score>=85?t('rt_excellent'):R.score>=70?t('rt_good'):R.score>=50?t('rt_ok'):t('rt_poor');
+ const bar=(lbl,pct,c)=>`<div class="bar"><span style="min-width:78px">${lbl}</span><div class="track"><div class="fill" style="width:${pct.toFixed(0)}%;background:${c}"></div></div><span style="min-width:38px;text-align:right">${pct.toFixed(0)}%</span></div>`;
+ const energyLine=R.extraPct>=0
+   ? `<div class="bar"><span style="min-width:78px">${t('extra')}</span><span style="color:#ff6a52;font-weight:700">+${R.extraPct.toFixed(1)}%</span><span style="color:var(--muted2)">(${(R.actWh/1000).toFixed(2)} vs ${(R.optWh/1000).toFixed(2)} kWh)</span></div>`
+   : `<div class="bar"><span style="min-width:78px">${t('saved')}</span><span style="color:#6ee87f;font-weight:700">${R.extraPct.toFixed(1)}%</span></div>`;
+ document.getElementById('ratingBars').innerHTML=
+   bar(t('bar_ok'),R.okPct,'#6ee87f')+bar(t('bar_fast'),R.fastPct,'#ff6a52')+bar(t('bar_slow'),R.slowPct,'#4aa8ff')+energyLine;
+ // recolor map by deviation
+ routeLayer.clearLayers();
+ for(let i=0;i<r.pts.length-1;i++){let c='#2a4a54';if(i<R.maxIdx)c=R.cls[i]===1?'#ff6a52':R.cls[i]===-1?'#4aa8ff':'#6ee87f';
+  L.polyline([[r.pts[i].lat,r.pts[i].lon],[r.pts[i+1].lat,r.pts[i+1].lon]],{color:c,weight:5,opacity:.92}).addTo(routeLayer);}
+ drawMarkers(r);
+ document.getElementById('mapTitle').textContent=sl?'Trasa · barva = odstopanje':'Route · color = deviation';
+ document.getElementById('mapLegend').style.display='none';
+ // runs list
+ const runs=[];let st=0;for(let i=1;i<=R.maxIdx;i++){if(R.cls[i]!==R.cls[st]||i===R.maxIdx){
+   if(R.cls[st]!==0){let sum=0,n=0;for(let k=st;k<i;k++){sum+=(R.vAct[k]*3.6-r.spdKmh[k]);n++;}
+    runs.push({c:R.cls[st],from:r.distKm[st],to:r.distKm[i],len:r.distKm[i]-r.distKm[st],avg:sum/n,corner:r.spdKmh[st]<r.ctx.targetCruise*3.6*0.7});}
+   st=i;}}
+ runs.sort((a,b)=>b.len-a.len);
+ document.getElementById('runList').innerHTML=runs.slice(0,6).map(R2=>{
+   const tag=R2.c===1?`<span class="tag fast">${t('tag_fast')}</span>`:`<span class="tag slow">${t('tag_slow')}</span>`;
+   const sign=R2.avg>=0?'+':'';const cor=R2.corner?` · ${t('corner')}`:'';
+   return `<div class="run">${tag}<span>${R2.from.toFixed(2)}–${R2.to.toFixed(2)} km</span><span style="color:var(--muted2)">${sign}${R2.avg.toFixed(0)} km/h${cor}</span></div>`;}).join('');
+ drawChartC(r,R);
+ map.fitBounds(L.latLngBounds(r.pts.map(p=>[p.lat,p.lon])),{padding:[24,24]});
+ card.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function drawChartC(r,R){const cv=document.getElementById('chartC'),{ctx,w,h}=setup(cv,170);ctx.clearRect(0,0,w,h);
+ const mx=r.distKm[R.maxIdx]||r.km,sMax=Math.max(60,Math.max(...r.spdKmh)*1.1);
+ ctx.strokeStyle='#203840';ctx.fillStyle='#5f7882';ctx.font='10px JetBrains Mono';
+ const st=niceStep(mx,6);for(let k=0;k<=mx+1e-6;k+=st){const x=PAD.l+(k/mx)*(w-PAD.l-PAD.r);ctx.beginPath();ctx.moveTo(x,PAD.t);ctx.lineTo(x,h-PAD.b);ctx.stroke();ctx.textAlign='center';ctx.fillText(k.toFixed(st<1?1:0),x,h-PAD.b+13);}
+ const xx=km=>PAD.l+(km/mx)*(w-PAD.l-PAD.r),yy=v=>(h-PAD.b)-(v/sMax)*(h-PAD.t-PAD.b);
+ ctx.beginPath();for(let i=0;i<=R.maxIdx;i++){const x=xx(r.distKm[i]),y=yy(r.spdKmh[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.strokeStyle='#27d3b5';ctx.lineWidth=2;ctx.stroke();
+ ctx.beginPath();for(let i=0;i<=R.maxIdx;i++){const x=xx(r.distKm[i]),y=yy(R.vAct[i]*3.6);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.strokeStyle='#ffffff';ctx.lineWidth=1.6;ctx.stroke();
+ ctx.fillStyle='#5f7882';ctx.textAlign='left';ctx.fillText(Math.round(sMax)+' km/h',w-PAD.r-2,PAD.t+8);}
+
+/* ===== init ===== */
+document.getElementById('footer').textContent=t('foot');
+window.addEventListener('load',()=>setTimeout(run,400));
+window.addEventListener('resize',()=>{if(window.LAST){drawChartA(window.LAST);drawChartB(window.LAST);}});
+</script>
+</body>
+</html>
