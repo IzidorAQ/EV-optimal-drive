@@ -87,20 +87,27 @@ a{color:var(--teal)}
 #nav{position:fixed;inset:0;background:linear-gradient(180deg,#08110f,#0c1417);z-index:9000;display:none;flex-direction:column;padding:18px 18px env(safe-area-inset-bottom,18px)}
 #nav.show{display:flex}
 .navtop{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:12px}
-.navtop button{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px}
-.navmain{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}
-.navdir{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:clamp(20px,6vw,34px);letter-spacing:.02em;padding:10px 22px;border-radius:14px;margin-bottom:4px}
-.navnow{font-family:"JetBrains Mono",monospace;font-weight:800;font-size:clamp(64px,22vw,150px);line-height:.9;letter-spacing:-.02em}
-.navnow small{font-size:.28em;color:var(--muted);font-weight:500;letter-spacing:.1em}
-.navtarget{font-family:"JetBrains Mono",monospace;font-size:clamp(15px,4.5vw,22px);color:var(--teal)}
+.navtop button{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:8px 13px;cursor:pointer;font-size:13px}
+.navtopctr{display:flex;align-items:center;gap:10px}
+.navtgl{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:8px 13px;cursor:pointer;font-size:13px;font-family:"JetBrains Mono",monospace}
+.navtgl.on{background:var(--teal);color:#04201a;font-weight:700;border-color:var(--teal)}
+.navdemobar{display:flex;align-items:center;gap:12px;max-width:560px;width:100%;margin:8px auto 0;font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--muted)}
+.navdemobar input[type=range]{flex:1}
+.navmain{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center}
+.navdir{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:clamp(26px,8vw,52px);letter-spacing:.02em;padding:14px 30px;border-radius:16px;margin-bottom:4px}
+.navnow{font-family:"JetBrains Mono",monospace;font-weight:800;font-size:clamp(92px,30vw,240px);line-height:.85;letter-spacing:-.02em}
+.navnow small{font-size:.24em;color:var(--muted);font-weight:500;letter-spacing:.1em}
+.navtarget{font-family:"JetBrains Mono",monospace;font-size:clamp(20px,6.5vw,38px);color:var(--teal)}
 .navtarget b{font-weight:800}
-.navlook{min-height:24px;font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--hot);margin-top:6px}
-.navmini{width:100%;max-width:520px;height:120px;border:1px solid var(--line);border-radius:12px;margin-top:10px;background:#0a1316}
-.navstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:560px;width:100%;margin:14px auto 0}
-.navstat{background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:9px}
-.navstat .k{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-.navstat .v{font-family:"JetBrains Mono",monospace;font-size:17px;font-weight:700}
-.navstat .v small{font-size:11px;color:var(--muted)}
+.navlook{min-height:26px;font-family:"JetBrains Mono",monospace;font-size:clamp(15px,4vw,20px);color:var(--hot);margin-top:6px}
+.navmini{width:100%;max-width:560px;height:150px;border:1px solid var(--line);border-radius:12px;margin-top:10px;background:#0a1316}
+.navelev{width:100%;max-width:560px;height:92px;border:1px solid var(--line);border-radius:12px;margin-top:10px;background:#0a1316;display:block}
+.navstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(86px,1fr));gap:9px;max-width:760px;width:100%;margin:14px auto 0}
+.navstat{background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:11px}
+.navstat .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.navstat .v{font-family:"JetBrains Mono",monospace;font-size:23px;font-weight:700}
+.navstat .v small{font-size:13px;color:var(--muted)}
+#three,#navThree{display:block}
 
 /* ===== RATING ===== */
 #ratingCard{display:none}
@@ -176,7 +183,7 @@ a{color:var(--teal)}
             <div class="field"><label class="lbl" data-i="l_comfort">Ovinki (g)</label><div class="rangewrap"><input type="range" id="alat" min="15" max="50" value="30"><span class="rngval" id="alatV">0.30 g</span></div></div>
           </div>
           <div class="field"><label class="lbl" data-i="l_opt">Optimizacija hitrosti</label>
-            <div class="seg" id="optmode"><button data-o="cruise" class="on" data-i="o_cruise">Konstantna</button><button data-o="terrain" data-i="o_terrain">Eko po terenu</button></div>
+            <div class="seg" id="optmode"><button data-o="optimal" class="on" data-i="o_optimal">Optimalno</button><button data-o="cruise" data-i="o_cruise">Konstantna</button></div>
             <div class="hint" id="optHint" data-i="opt_hint"></div>
           </div>
           <div class="spacer"></div>
@@ -192,13 +199,14 @@ a{color:var(--teal)}
     <div>
       <div class="card" style="margin-bottom:16px">
         <div class="hd"><span class="dot"></span><h2 id="mapTitle" data-i="hd_route">Trasa · barva = poraba</h2>
+          <div class="seg" id="viewmode" style="margin-left:auto;width:auto"><button data-v="2d" class="on">2D</button><button data-v="3d">3D</button></div>
           <span style="margin-left:auto" class="legend" id="mapLegend">
             <span><i style="background:var(--regen)"></i><span data-i="lg_regen">regen</span></span>
             <span><i style="background:var(--teal)"></i><span data-i="lg_low">nizka</span></span>
             <span><i style="background:var(--hot)"></i><span data-i="lg_high">visoka</span></span>
           </span>
         </div>
-        <div class="bd" style="padding:12px"><div id="map"></div></div>
+        <div class="bd" style="padding:12px"><div id="map"></div><canvas id="three" style="display:none;width:100%;height:420px;border-radius:12px;border:1px solid var(--line);background:#0a1316;cursor:grab"></canvas><div class="hint" id="three3dHint" style="display:none"></div></div>
       </div>
 
       <div class="card" id="ratingCard" style="margin-bottom:16px">
@@ -244,8 +252,17 @@ a{color:var(--teal)}
 <div id="nav">
   <div class="navtop">
     <span id="navMode">GPS</span>
-    <span id="navElapsed">00:00</span>
-    <button id="navEnd" data-i="btn_end">Končaj</button>
+    <div class="navtopctr">
+      <button id="navVoiceBtn" class="navtgl" title="Zvok">🔊</button>
+      <button id="nav3dBtn" class="navtgl" data-i="nav_3d">3D</button>
+      <span id="navElapsed">00:00</span>
+      <button id="navEnd" data-i="btn_end">Končaj</button>
+    </div>
+  </div>
+  <div class="navdemobar" id="navDemoBar" style="display:none">
+    <span data-i="nav_demospeed">Hitrost predvajanja</span>
+    <input type="range" id="navDemoSpeed" min="1" max="80" value="30">
+    <span class="rngval" id="navDemoSpeedV">1.0×</span>
   </div>
   <div class="navmain">
     <div class="navdir" id="navDir">–</div>
@@ -253,16 +270,21 @@ a{color:var(--teal)}
     <div class="navtarget"><span data-i="nav_opt">optimalno</span> <b><span id="navTarget">0</span> km/h</b></div>
     <div class="navlook" id="navLook"></div>
     <canvas id="navMini" class="navmini"></canvas>
+    <canvas id="navThree" class="navmini" style="display:none"></canvas>
+    <canvas id="navElevChart" class="navelev"></canvas>
   </div>
   <div class="navstats">
     <div class="navstat"><div class="k" data-i="nav_remain">Do cilja</div><div class="v"><span id="navRemain">0</span> <small>km</small></div></div>
     <div class="navstat"><div class="k" data-i="nav_eta">ETA</div><div class="v" id="navEta">–</div></div>
+    <div class="navstat"><div class="k" data-i="nav_elev">Višina</div><div class="v"><span id="navElev">0</span> <small>m</small></div></div>
+    <div class="navstat"><div class="k" data-i="nav_grade">Naklon</div><div class="v"><span id="navGrade">0</span> <small>%</small></div></div>
     <div class="navstat"><div class="k" data-i="nav_soc">SoC</div><div class="v"><span id="navSoc">0</span> <small>%</small></div></div>
     <div class="navstat"><div class="k" data-i="nav_used">Poraba</div><div class="v"><span id="navUsed">0</span> <small>kWh</small></div></div>
   </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const G=9.81;
 
@@ -318,7 +340,7 @@ const I18N={
   hd_params:"Parametri vožnje",l_vehicle:"Vozilo",l_start:"Začetek",l_dest:"Cilj",l_autow:"Samodejno vreme in veter (online)",
   l_temp:"Temperatura",l_soc:"Začetni SoC",l_weather:"Vreme / podlaga",w_dry:"Suho",w_rain:"Dež",w_snow:"Sneg",
   l_wind:"Veter",l_winddir:"Smer (od)",wd_none:"brez",l_pax:"Potniki",l_cargo:"Tovor (kg)",l_climate:"Klima / ogrevanje",c_on:"Vključeno",c_off:"Izključeno",
-  l_style:"Slog",l_vmax:"Maks. hitrost",l_comfort:"Ovinki (g)",l_opt:"Optimizacija hitrosti",o_cruise:"Konstantna",o_terrain:"Eko po terenu",opt_hint:"Konstantna drži potovalno hitrost; Eko po terenu zniža hitrost v klanec in jo dvigne navzdol (konstantna potovalna moč, navzdol raje drsenje kot regen).",btn_run:"Izračunaj optimalno vožnjo",btn_nav:"▶ Navigacija (GPS)",btn_demo:"Demo vožnja (brez GPS)",
+  l_style:"Slog",l_vmax:"Maks. hitrost",l_comfort:"Ovinki (g)",l_opt:"Optimizacija hitrosti",o_cruise:"Konstantna",o_optimal:"Optimalno",opt_hint:"Optimalno z dinamičnim programiranjem poišče hitrostni profil z najnižjo skupno porabo (jadranje pred ovinki, minimalno zaviranje). Drsnik Slog uravnava razmerje poraba/čas: maks. doseg = najnižja poraba.",btn_run:"Izračunaj optimalno vožnjo",btn_nav:"▶ Navigacija (GPS)",btn_demo:"Demo vožnja (brez GPS)",
   hd_route:"Trasa · barva = poraba",lg_regen:"regen",lg_low:"nizka",lg_high:"visoka",
   ch_terrain:"Teren in hitrost",ch_elev:"višina",ch_speed:"hitrost",ch_power:"Moč na bateriji in SoC",ch_cons:"poraba",ch_regen:"regen",
   data_note:"Trasa: OSRM · Višine in vreme: Open-Meteo · Geokodiranje: Nominatim (OpenStreetMap). Podatki za i4 M50 so uradni (BMW); ostala vozila so modelirane ocene. GPS navigacija deluje le prek HTTPS in ob dovoljenju za lokacijo; sicer uporabi Demo vožnjo.",
@@ -326,7 +348,7 @@ const I18N={
   st_geo:"Geokodiranje naslovov…",st_weather:"Pridobivam vreme…",st_route:"Računam traso (OSRM)…",st_elev:"Pridobivam višine…",st_calc:"Optimiziram hitrostni profil…",st_done:"Izračun končan.",
   st_geofail:"Geokodiranje ni uspelo, uporabljam privzete koordinate Krasa.",st_wx:"Vreme: ",st_err:"Napaka: ",
   hd_rating:"Ocena vožnje",btn_closerating:"Nazaj na porabo",ch_optact:"Optimalno vs dejansko",lg_opt:"optimalno",lg_act:"dejansko",
-  nav_opt:"optimalno",nav_remain:"Do cilja",nav_eta:"ETA",nav_soc:"SoC",nav_used:"Poraba",btn_end:"Končaj",
+  nav_opt:"optimalno",nav_remain:"Do cilja",nav_eta:"ETA",nav_soc:"SoC",nav_used:"Poraba",btn_end:"Končaj",nav_3d:"3D",nav_demospeed:"Hitrost predvajanja",nav_elev:"Višina",nav_grade:"Naklon",three_hint:"Vleci za vrtenje, kolešček za približanje. Višina je poudarjena za boljšo vidnost.",
   dir_hold:"OHRANI HITROST",dir_slow:"SPROSTI PLIN",dir_fast:"LAHKO HITREJE",
   rt_excellent:"Odlično",rt_good:"Dobro",rt_ok:"Solidno",rt_poor:"Lahko bolje",
   bar_ok:"v območju",bar_fast:"prehitro",bar_slow:"prepočasno",extra:"poraba +",saved:"prihranek",
@@ -338,7 +360,7 @@ const I18N={
   hd_params:"Trip parameters",l_vehicle:"Vehicle",l_start:"Start",l_dest:"Destination",l_autow:"Auto weather and wind (online)",
   l_temp:"Temperature",l_soc:"Start SoC",l_weather:"Weather / surface",w_dry:"Dry",w_rain:"Rain",w_snow:"Snow",
   l_wind:"Wind",l_winddir:"Dir (from)",wd_none:"none",l_pax:"Passengers",l_cargo:"Cargo (kg)",l_climate:"Climate / heating",c_on:"On",c_off:"Off",
-  l_style:"Style",l_vmax:"Max speed",l_comfort:"Corners (g)",l_opt:"Speed optimization",o_cruise:"Constant",o_terrain:"Terrain eco",opt_hint:"Constant holds the cruise speed; Terrain eco slows uphill and speeds up downhill (constant cruise power, coasting preferred over regen on descents).",btn_run:"Compute optimal drive",btn_nav:"▶ Navigation (GPS)",btn_demo:"Demo drive (no GPS)",
+  l_style:"Style",l_vmax:"Max speed",l_comfort:"Corners (g)",l_opt:"Speed optimization",o_cruise:"Constant",o_optimal:"Optimal",opt_hint:"Optimal uses dynamic programming to find the lowest total-energy speed profile (coasting into corners, minimal braking). The Style slider sets the energy/time trade-off: max range = lowest consumption.",btn_run:"Compute optimal drive",btn_nav:"▶ Navigation (GPS)",btn_demo:"Demo drive (no GPS)",
   hd_route:"Route · color = consumption",lg_regen:"regen",lg_low:"low",lg_high:"high",
   ch_terrain:"Terrain and speed",ch_elev:"elevation",ch_speed:"speed",ch_power:"Battery power and SoC",ch_cons:"consumption",ch_regen:"regen",
   data_note:"Route: OSRM · Elevation and weather: Open-Meteo · Geocoding: Nominatim (OpenStreetMap). i4 M50 figures are official (BMW); other vehicles are modeled estimates. GPS navigation needs HTTPS and location permission; otherwise use Demo drive.",
@@ -346,7 +368,7 @@ const I18N={
   st_geo:"Geocoding…",st_weather:"Fetching weather…",st_route:"Routing (OSRM)…",st_elev:"Fetching elevation…",st_calc:"Optimizing speed profile…",st_done:"Done.",
   st_geofail:"Geocoding failed, using default Karst coordinates.",st_wx:"Weather: ",st_err:"Error: ",
   hd_rating:"Drive rating",btn_closerating:"Back to consumption",ch_optact:"Optimal vs actual",lg_opt:"optimal",lg_act:"actual",
-  nav_opt:"optimal",nav_remain:"To dest.",nav_eta:"ETA",nav_soc:"SoC",nav_used:"Energy",btn_end:"End",
+  nav_opt:"optimal",nav_remain:"To dest.",nav_eta:"ETA",nav_soc:"SoC",nav_used:"Energy",btn_end:"End",nav_3d:"3D",nav_demospeed:"Playback speed",nav_elev:"Elevation",nav_grade:"Grade",three_hint:"Drag to rotate, wheel to zoom. Elevation is exaggerated for visibility.",
   dir_hold:"HOLD SPEED",dir_slow:"EASE OFF",dir_fast:"CAN GO FASTER",
   rt_excellent:"Excellent",rt_good:"Good",rt_ok:"Solid",rt_poor:"Room to improve",
   bar_ok:"in range",bar_fast:"too fast",bar_slow:"too slow",extra:"energy +",saved:"saved",
@@ -416,12 +438,30 @@ function resample(pts,step){const out=[pts[0]];let acc=0;
   while(acc+segLen>=step){const f=(step-acc)/segLen;const np={lat:from.lat+(pts[i].lat-from.lat)*f,lon:from.lon+(pts[i].lon-from.lon)*f};out.push(np);from=np;segLen=hav(from,pts[i]);acc=0;}
   acc+=segLen;}
  out.push(pts[pts.length-1]);return out;}
-async function fetchElevations(pts){const out=new Array(pts.length).fill(0),CH=100;
- for(let i=0;i<pts.length;i+=CH){const ch=pts.slice(i,i+CH);
+async function fetchElevations(pts){const N=pts.length;
+ // cumulative distance of route points
+ const fineCum=new Array(N);fineCum[0]=0;for(let i=1;i<N;i++)fineCum[i]=fineCum[i-1]+hav(pts[i-1],pts[i]);
+ const total=fineCum[N-1];
+ // sample elevation at ~85 m (matches Open-Meteo Copernicus 90 m DEM) to avoid oversampling noise
+ const step=85,M=Math.max(2,Math.ceil(total/step)+1),coarsePts=[],coarseCum=[];let seg=0;
+ for(let k=0;k<M;k++){const d=Math.min(total,k*step);
+  while(seg<N-2&&fineCum[seg+1]<d)seg++;
+  const f=(d-fineCum[seg])/Math.max(1e-6,fineCum[seg+1]-fineCum[seg]);
+  coarsePts.push({lat:pts[seg].lat+(pts[seg+1].lat-pts[seg].lat)*f,lon:pts[seg].lon+(pts[seg+1].lon-pts[seg].lon)*f});coarseCum.push(d);}
+ // fetch coarse elevations
+ const ce=new Array(coarsePts.length).fill(0),CH=100;
+ for(let i=0;i<coarsePts.length;i+=CH){const ch=coarsePts.slice(i,i+CH);
   const lat=ch.map(p=>p.lat.toFixed(6)).join(','),lon=ch.map(p=>p.lon.toFixed(6)).join(',');
   const r=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);const j=await r.json();
-  if(j&&j.elevation)j.elevation.forEach((e,k)=>out[i+k]=e);}
- const sm=out.slice();for(let i=0;i<out.length;i++){let s=0,n=0;for(let k=-2;k<=2;k++){const x=i+k;if(x>=0&&x<out.length){s+=out[x];n++;}}sm[i]=s/n;}return sm;}
+  if(j&&j.elevation)j.elevation.forEach((e,k)=>ce[i+k]=e);}
+ // smooth coarse (3-pt)
+ const cs=ce.slice();for(let i=0;i<ce.length;i++){let s=0,n=0;for(let k=-1;k<=1;k++){const x=i+k;if(x>=0&&x<ce.length){s+=ce[x];n++;}}cs[i]=s/n;}
+ // interpolate to route points by distance
+ const out=new Array(N);let ci=0;
+ for(let i=0;i<N;i++){const d=fineCum[i];while(ci<coarseCum.length-2&&coarseCum[ci+1]<d)ci++;
+  const f=(d-coarseCum[ci])/Math.max(1e-6,coarseCum[ci+1]-coarseCum[ci]);out[i]=cs[ci]+(cs[ci+1]-cs[ci])*f;}
+ // light final smoothing
+ const sm=out.slice();for(let i=0;i<N;i++){let s=0,n=0;for(let k=-1;k<=1;k++){const x=i+k;if(x>=0&&x<N){s+=out[x];n++;}}sm[i]=s/n;}return sm;}
 function curveRadius(p0,p1,p2,latRef){const mLat=111320,mLon=111320*Math.cos(latRef*Math.PI/180);const X=p=>({x:p.lon*mLon,y:p.lat*mLat});
  const A=X(p0),B=X(p1),C=X(p2);const a=Math.hypot(B.x-C.x,B.y-C.y),b=Math.hypot(A.x-C.x,A.y-C.y),c=Math.hypot(A.x-B.x,A.y-B.y);
  const area=Math.abs((B.x-A.x)*(C.y-A.y)-(C.x-A.x)*(B.y-A.y))/2;if(area<1e-3)return 1e6;return (a*b*c)/(4*area);}
@@ -446,16 +486,46 @@ function buildContext(p){
  const targetCruise=eco+(vmax-eco)*(p.style/100);
  const vCorner=new Array(N).fill(vmax);
  for(let i=1;i<N-1;i++)vCorner[i]=Math.min(vmax,Math.sqrt(aLat*curveRadius(p.pts[i-1],p.pts[i],p.pts[i+1],latRef)));
- // per-point smoothed grade for terrain-eco targeting
- const gp=new Array(N).fill(0);
- for(let i=0;i<N;i++){let s=0,n=0;for(let k=-3;k<=2;k++){const si=i+k;if(si>=0&&si<N-1){s+=grade[si];n++;}}gp[i]=n?s/n:0;}
- // constant-power target: hold the flat-cruise wheel power across grades (slower up, faster down)
- const Cda=0.5*rho*veh.cd*veh.A,Pref=(Cda*targetCruise*targetCruise+crr*m*G)*targetCruise,floor=Math.max(0.6*targetCruise,8.33);
- const gradeTarget=th=>{const Fg=crr*m*G*Math.cos(th)+m*G*Math.sin(th);for(let v=vmax;v>=floor;v-=0.4){if((Cda*v*v+Fg)*v<=Pref)return v;}return floor;};
- const vlim=new Array(N);for(let i=0;i<N;i++){const base=p.optMode==='terrain'?gradeTarget(gp[i]):targetCruise;vlim[i]=Math.min(base,vmax,vCorner[i]);}
- return{veh,N,m,rho,crr,Paux,aAccel,aDecel,ds,grade,head,distKm,totalLen,latRef,vmax,eco,targetCruise,vCorner,vlim,
+ const vlim=new Array(N);for(let i=0;i<N;i++){const base=p.optMode==='cruise'?targetCruise:vmax;vlim[i]=Math.min(base,vmax,vCorner[i]);}
+ const lambda=(p.style/100)*24000; // time weight (W) for the optimal mode
+ return{veh,N,m,rho,crr,Paux,aAccel,aDecel,ds,grade,head,distKm,totalLen,latRef,vmax,eco,targetCruise,vCorner,vlim,lambda,optMode:p.optMode,
    pRegenMax:veh.pRegen*1000,battCapJ:veh.batt*3.6e6,soc:p.soc,windFrom:p.windDir,windMs:p.wind/3.6,elev:p.elev,pts:p.pts,weather:p.weather};
 }
+/* shared per-segment battery energy (work-energy method, regen + power limit) */
+function segEnergy(ctx,i,v1,v2){
+ const ds=ctx.ds[i],va=(v1+v2)/2;if(va<=0.05)return null;
+ const dt=ds/va,th=ctx.grade[i],dh=ctx.elev[i+1]-ctx.elev[i],cosT=Math.cos(th);
+ const wc=ctx.windFrom>=0?ctx.windMs*Math.cos((ctx.windFrom-ctx.head[i])*Math.PI/180):0;
+ const vr1=v1+wc,vr2=v2+wc;
+ const dKE=0.5*ctx.m*(v2*v2-v1*v1),dPE=ctx.m*G*dh,Eroll=ctx.crr*ctx.m*G*cosT*ds;
+ const Eaero=0.5*ctx.rho*ctx.veh.cd*ctx.veh.A*((vr1*Math.abs(vr1))+(vr2*Math.abs(vr2)))/2*ds;
+ const Ewheel=dKE+dPE+Eroll+Eaero;let Ebatt,regenMech=0,feasible=true;
+ if(Ewheel>=0){if(Ewheel/dt>ctx.veh.pMax*1000)feasible=false;Ebatt=Ewheel/0.88+ctx.Paux*dt;}
+ else{const mech=-Ewheel;regenMech=Math.min(mech,ctx.pRegenMax*dt);Ebatt=ctx.Paux*dt-regenMech*0.70;}
+ return{Ebatt,dt,regenMech,feasible};}
+/* exact minimum-energy speed profile via dynamic programming over (position, speed) */
+function dpOptimal(ctx){
+ const N=ctx.N,dV=0.5,V=ctx.vmax,L=Math.floor(V/dV)+1,INF=1e18,lam=ctx.lambda;
+ const aAccCap=ctx.weather==='snow'?0.9:ctx.weather==='rain'?1.7:2.6;
+ const aBrCap =ctx.weather==='snow'?1.3:ctx.weather==='rain'?2.4:3.6;
+ const J=new Float64Array(N*L).fill(INF),nxt=new Int16Array(N*L).fill(-1);
+ const lim=new Int16Array(N);for(let i=0;i<N;i++)lim[i]=Math.max(0,Math.min(L-1,Math.floor(ctx.vlim[i]/dV)));
+ J[(N-1)*L]=0; // finish at rest
+ for(let i=N-2;i>=0;i--){const ds=ctx.ds[i],bi=i*L,bn=(i+1)*L,Ln=lim[i+1];
+  for(let k1=0;k1<=lim[i];k1++){const v1=k1*dV;
+   const v2hi=Math.min(Ln*dV,Math.sqrt(v1*v1+2*aAccCap*ds));
+   const v2lo=Math.sqrt(Math.max(0,v1*v1-2*aBrCap*ds));
+   let ka=Math.ceil(v2lo/dV-1e-9),kb=Math.floor(v2hi/dV+1e-9);if(ka<0)ka=0;if(kb>Ln)kb=Ln;
+   let best=INF,bk=-1;
+   for(let k2=ka;k2<=kb;k2++){const va=(v1+k2*dV)/2;if(va<=0.05)continue;
+    const se=segEnergy(ctx,i,v1,k2*dV);if(!se||!se.feasible)continue;
+    const c=se.Ebatt+lam*se.dt+J[bn+k2];if(c<best){best=c;bk=k2;}}
+   J[bi+k1]=best;nxt[bi+k1]=bk;}}
+ const v=new Array(N).fill(0);let k=0;
+ if(J[0]>=INF){let bc=INF;for(let kk=0;kk<=lim[0];kk++)if(J[kk]<bc){bc=J[kk];k=kk;}}
+ v[0]=k*dV;
+ for(let i=0;i<N-1;i++){const nk=nxt[i*L+k];if(nk<0){for(let j=i+1;j<N;j++)v[j]=0;break;}v[i+1]=nk*dV;k=nk;}
+ return v;}
 function optimalProfile(ctx){const N=ctx.N,vb=new Array(N);vb[N-1]=0;
  for(let i=N-2;i>=0;i--)vb[i]=Math.min(ctx.vlim[i],Math.sqrt(vb[i+1]*vb[i+1]+2*ctx.aDecel*ctx.ds[i]));
  const v=new Array(N);v[0]=0;for(let i=1;i<N;i++)v[i]=Math.min(vb[i],Math.sqrt(v[i-1]*v[i-1]+2*ctx.aAccel*ctx.ds[i-1]));return v;}
@@ -463,17 +533,14 @@ function energyProfile(ctx,v,from,to){from=from||0;to=(to==null?ctx.N-1:to);cons
  const segPower=new Array(N-1).fill(0),powKW=new Array(N-1).fill(0),socArr=new Array(N).fill(null),spdKmh=new Array(N).fill(0),cumTime=new Array(N).fill(0),cumWh=new Array(N).fill(0);
  let battJ=0,regenJ=0,time=0,climb=0,descent=0,socJ=ctx.soc/100*ctx.battCapJ;
  socArr[from]=socJ/ctx.battCapJ*100;spdKmh[from]=v[from]*3.6;
- for(let i=from;i<to;i++){const v1=v[i],v2=v[i+1],dsi=ctx.ds[i],va=Math.max(0.3,(v1+v2)/2);
-  const a=(v2*v2-v1*v1)/(2*dsi),th=ctx.grade[i],dz=ctx.elev[i+1]-ctx.elev[i];if(dz>0)climb+=dz;else descent-=dz;
-  let vRel=va;if(ctx.windFrom>=0)vRel=va+ctx.windMs*Math.cos((ctx.windFrom-ctx.head[i])*Math.PI/180);
-  const Faero=0.5*ctx.rho*ctx.veh.cd*ctx.veh.A*vRel*Math.abs(vRel),Froll=ctx.crr*ctx.m*G*Math.cos(th),Fgr=ctx.m*G*Math.sin(th),Fac=ctx.m*a;
-  const Pw=(Faero+Froll+Fgr+Fac)*va,dt=dsi/va;time+=dt;let Pb;
-  if(Pw>=0)Pb=Pw/0.88+ctx.Paux;else{let rg=-Pw*0.70;if(rg>ctx.pRegenMax)rg=ctx.pRegenMax;regenJ+=rg*dt;Pb=ctx.Paux-rg;}
-  const e=Pb*dt;battJ+=e;socJ-=e;segPower[i]=powKW[i]=Pb/1000;cumTime[i+1]=time;cumWh[i+1]=battJ/3600;
+ for(let i=from;i<to;i++){const v1=v[i],v2=v[i+1],dz=ctx.elev[i+1]-ctx.elev[i];if(dz>0)climb+=dz;else descent-=dz;
+  const se=segEnergy(ctx,i,v1,v2),dt=se?se.dt:(ctx.ds[i]/0.3),Eb=se?se.Ebatt:ctx.Paux*dt;
+  if(se)regenJ+=se.regenMech*0.70;
+  battJ+=Eb;socJ-=Eb;time+=dt;const pk=Eb/dt/1000;segPower[i]=powKW[i]=pk;cumTime[i+1]=time;cumWh[i+1]=battJ/3600;
   socArr[i+1]=Math.max(0,socJ)/ctx.battCapJ*100;spdKmh[i+1]=v2*3.6;}
  return{battJ,Wh:battJ/3600,regenJ,regenKwh:regenJ/3.6e6,time,segPower,powKW,socArr,spdKmh,cumTime,cumWh,climb,descent};}
 
-function simulate(p){const ctx=buildContext(p);const v=optimalProfile(ctx);const ep=energyProfile(ctx,v);
+function simulate(p){const ctx=buildContext(p);const v=(p.optMode==='optimal')?dpOptimal(ctx):optimalProfile(ctx);const ep=energyProfile(ctx,v);
  const km=ctx.totalLen/1000,grossWh=ep.Wh+ep.regenKwh*1000;
  return{ctx,vOptMs:v,pts:ctx.pts,elev:ctx.elev,ds:ctx.ds,distKm:ctx.distKm,
   segPower:ep.segPower,powKW:ep.powKW,socArr:ep.socArr,spdKmh:ep.spdKmh,cumTime:ep.cumTime,cumWh:ep.cumWh,
@@ -540,6 +607,7 @@ function render(r){
  const bounds=L.latLngBounds(r.pts.map(p=>[p.lat,p.lon]));map.fitBounds(bounds,{padding:[24,24]});
  drawChartA(r);drawChartB(r);
  document.getElementById('readoutA').textContent='';document.getElementById('readoutB').textContent='';
+ if(typeof TJS!=='undefined'&&TJS.orbit.active){TJS.built=false;tjsOrbitStart();}
 }
 function drawMarkers(r){markerLayer.clearLayers();
  L.circleMarker([r.A.lat,r.A.lon],{radius:7,color:'#6ee87f',fillColor:'#6ee87f',fillOpacity:1,weight:2}).bindTooltip(r.A.label).addTo(markerLayer);
@@ -596,7 +664,8 @@ function showCursor(r,idx){drawChartA(r);drawChartB(r);const ca=document.getElem
  document.getElementById('readoutA').innerHTML=`<b>${r.distKm[idx].toFixed(2)} km</b> · ${sl?'višina':'elev'} ${Math.round(r.elev[idx])} m · ${sl?'hitrost':'speed'} <b>${Math.round(r.spdKmh[idx])} km/h</b>`;
  document.getElementById('readoutB').innerHTML=`<b>${r.distKm[idx].toFixed(2)} km</b> · ${sl?'moč':'power'} <b>${pw.toFixed(1)} kW</b> ${pw<0?'(regen)':''} · SoC <b>${r.socArr[idx].toFixed(1)}%</b>`;
  if(cursorMarker)markerLayer.removeLayer(cursorMarker);
- cursorMarker=L.circleMarker([r.pts[idx].lat,r.pts[idx].lon],{radius:6,color:'#fff',fillColor:'#27d3b5',fillOpacity:1,weight:2}).addTo(markerLayer);}
+ cursorMarker=L.circleMarker([r.pts[idx].lat,r.pts[idx].lon],{radius:6,color:'#fff',fillColor:'#27d3b5',fillOpacity:1,weight:2}).addTo(markerLayer);
+ if(typeof TJS!=='undefined'&&TJS.orbit.active&&TJS.pos&&TJS.verts){const v=TJS.verts[Math.min(idx,TJS.verts.length-1)];TJS.pos.position.set(v.x,v.y,v.z);}}
 
 /* ============================================================
    NAVIGATION
@@ -607,15 +676,40 @@ document.getElementById('navBtn').addEventListener('click',()=>startNav('gps'));
 document.getElementById('demoBtn').addEventListener('click',()=>startNav('demo'));
 document.getElementById('navEnd').addEventListener('click',()=>finishNav());
 
+/* ===== voice guidance (Web Speech, non-interrupting queue) ===== */
+const Voice={on:false,q:[],speaking:false,lastCur:null,lastCornerKey:null};
+function vPump(){if(Voice.speaking||!Voice.q.length||!('speechSynthesis'in window))return;
+ const m=Voice.q.shift();const u=new SpeechSynthesisUtterance(m.text);u.lang=LANG==='sl'?'sl-SI':'en-US';u.rate=1.05;
+ u.onend=()=>{Voice.speaking=false;vPump();};u.onerror=()=>{Voice.speaking=false;vPump();};
+ Voice.speaking=true;try{speechSynthesis.speak(u);}catch(e){Voice.speaking=false;}}
+function vEnqueue(type,text){if(!Voice.on)return;
+ if(type==='cur')Voice.q=Voice.q.filter(m=>m.type!=='cur'); // keep only newest pending current speed
+ Voice.q.push({type,text});if(Voice.q.length>3)Voice.q=Voice.q.slice(-3);vPump();}
+function vStop(){Voice.q=[];Voice.speaking=false;if('speechSynthesis'in window){try{speechSynthesis.cancel();}catch(e){}}}
+document.getElementById('navVoiceBtn').addEventListener('click',()=>{
+ if(!('speechSynthesis'in window)){alert(LANG==='sl'?'Zvočna navodila niso na voljo v tem brskalniku.':'Voice guidance not available in this browser.');return;}
+ Voice.on=!Voice.on;document.getElementById('navVoiceBtn').classList.toggle('on',Voice.on);
+ Voice.lastCur=null;Voice.lastCornerKey=null;
+ if(Voice.on){if(NAV)vEnqueue('cur',String(Math.round(NAV.r.spdKmh[NAV.curIdx])));}
+ else vStop();
+});
+
 function snapIdx(r,lat,lon){let best=1e18,bi=0;const p={lat,lon};
  for(let i=0;i<r.pts.length;i++){const d=hav(r.pts[i],p);if(d<best){best=d;bi=i;}}return{idx:bi,dist:best};}
 
 function startNav(mode){const r=window.LAST;if(!r)return;
  NAV={mode,r,ctx:window.CTX,curIdx:0,maxIdx:0,vActMs:new Array(r.pts.length).fill(null),
-   startT:Date.now(),timer:null,watch:null,lastPos:null,lastT:null,demoIdx:0,demoArr:null};
+   startT:Date.now(),timer:null,watch:null,lastPos:null,lastT:null,demoIdx:0,demoArr:null,
+   demoSpeed:(+document.getElementById('navDemoSpeed').value)/10,demoAcc:0,demoDist:0,threeOn:false};
  navEl.classList.add('show');document.getElementById('navMode').textContent=mode==='gps'?'GPS':'DEMO';
- setupNavMini();updateNavMini(0,0);
- if(mode==='demo'){NAV.demoArr=buildDemoSpeeds(r,NAV.ctx);NAV.timer=setInterval(demoTick,55);}
+ document.getElementById('navDemoBar').style.display = mode==='demo'?'flex':'none';
+ setupNavMini();
+ // reset 3D toggle to 2D mini at start
+ NAV.threeOn=false;document.getElementById('nav3dBtn').classList.remove('on');
+ document.getElementById('navMini').style.display='';document.getElementById('navThree').style.display='none';
+ updateNavMini(0,0);drawNavElev(0);
+ Voice.lastCur=null;Voice.lastCornerKey=null;document.getElementById('navVoiceBtn').classList.toggle('on',Voice.on);
+ if(mode==='demo'){NAV.timer=setInterval(demoTick,55);}
  else startGps();
  NAV.elapsedTimer=setInterval(()=>{const s=Math.floor((Date.now()-NAV.startT)/1000);document.getElementById('navElapsed').textContent=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;},500);
 }
@@ -637,10 +731,28 @@ function buildDemoSpeeds(r,ctx){const N=r.pts.length,arr=new Array(N);
   else if(Math.sin(i*0.04)>0.6)f=0.84; // some straights: too slow
   arr[i]=Math.max(0,opt*f);}
  arr[0]=0;arr[N-1]=0;return arr;}
-function demoTick(){const r=NAV.r;NAV.demoIdx+=1;const i=Math.min(NAV.demoIdx,r.pts.length-1);
- NAV.curIdx=i;NAV.maxIdx=i;NAV.vActMs[i]=NAV.demoArr[i]/3.6;
- stepNav(i,NAV.demoArr[i]);
- if(i>=r.pts.length-1)finishNav();}
+function demoTick(){const r=NAV.r,tick=0.055,N=r.pts.length;
+ const vms=Math.max(0.6,r.vOptMs[Math.min(NAV.curIdx,N-1)]); // actual speed = optimal profile
+ NAV.demoDist+=vms*tick*NAV.demoSpeed;
+ let i=NAV.curIdx;while(i<N-1 && r.distKm[i+1]*1000<=NAV.demoDist)i++;
+ NAV.curIdx=i;NAV.maxIdx=i;NAV.vActMs[i]=r.vOptMs[i];
+ stepNav(i,r.spdKmh[i]);
+ if(i>=N-1||NAV.demoDist>=r.km*1000)finishNav();}
+// demo playback speed slider
+(function(){const sl=document.getElementById('navDemoSpeed'),out=document.getElementById('navDemoSpeedV');
+ const u=()=>{const sp=(+sl.value)/10;out.textContent=sp.toFixed(1)+'×';if(NAV)NAV.demoSpeed=sp;};
+ sl.addEventListener('input',u);u();})();
+// nav 3D toggle
+document.getElementById('nav3dBtn').addEventListener('click',()=>{
+ if(!NAV)return;
+ if(!window.THREE){alert('3D ('+'three.js'+') ni na voljo.');return;}
+ NAV.threeOn=!NAV.threeOn;
+ document.getElementById('nav3dBtn').classList.toggle('on',NAV.threeOn);
+ document.getElementById('navMini').style.display=NAV.threeOn?'none':'';
+ document.getElementById('navThree').style.display=NAV.threeOn?'':'none';
+ if(NAV.threeOn){tjsBuild(NAV.r);tjsChaseStart();tjsChaseUpdate(NAV.curIdx);}
+ else tjsChaseStop();
+}); 
 function stepNav(idx,vActKmh){const r=NAV.r,opt=r.spdKmh[idx];
  document.getElementById('navNow').textContent=Math.round(vActKmh);
  document.getElementById('navTarget').textContent=Math.round(opt);
@@ -653,11 +765,23 @@ function stepNav(idx,vActKmh){const r=NAV.r,opt=r.spdKmh[idx];
  for(let j=idx+1;j<r.pts.length;j++){if((r.distKm[j]-d0)*1000>320)break;if(r.spdKmh[j]<minOpt){minOpt=r.spdKmh[j];minAt=j;}}
  if(minAt!=null&&minOpt<opt-8){const dist=Math.round((r.distKm[minAt]-d0)*1000);look=`↘ ${Math.round(minOpt)} km/h ${LANG==='sl'?'čez':'in'} ${dist} m`;}
  document.getElementById('navLook').textContent=look;
+ // voice guidance
+ if(Voice.on){
+  const cur=Math.round(opt);
+  if(Voice.lastCur==null||Math.abs(cur-Voice.lastCur)>=5){vEnqueue('cur',String(cur));Voice.lastCur=cur;}
+  if(minAt!=null&&minOpt<opt-8){const dd=(r.distKm[minAt]-d0)*1000;
+   if(dd>=40&&dd<=240){const key=Math.round(minOpt)+'@'+Math.round(minAt/4);
+    if(key!==Voice.lastCornerKey){vEnqueue('corner',Math.round(minOpt)+' '+(LANG==='sl'?'naprej':'ahead'));Voice.lastCornerKey=key;}}}
+ }
  const remKm=Math.max(0,r.km-r.distKm[idx]);document.getElementById('navRemain').textContent=remKm.toFixed(1);
  const etaS=Math.max(0,r.time-r.cumTime[idx]);document.getElementById('navEta').textContent=`${Math.floor(etaS/60)}:${String(Math.round(etaS%60)).padStart(2,'0')}`;
  document.getElementById('navSoc').textContent=r.socArr[idx].toFixed(0);
  document.getElementById('navUsed').textContent=(r.cumWh[idx]/1000).toFixed(2);
- updateNavMini(idx,minAt);}
+ document.getElementById('navElev').textContent=Math.round(r.elev[idx]);
+ const gi=Math.min(idx,r.ds.length-1),gpct=(r.elev[Math.min(idx+1,r.elev.length-1)]-r.elev[idx])/r.ds[gi]*100;
+ const gp=Math.max(-30,Math.min(30,gpct));document.getElementById('navGrade').textContent=(gp>=0?'+':'')+gp.toFixed(1);
+ if(NAV&&NAV.threeOn){tjsChaseUpdate(idx);} else updateNavMini(idx,minAt);
+ drawNavElev(idx);}
 
 /* nav mini map */
 let NAVPROJ=null;
@@ -674,11 +798,29 @@ function updateNavMini(idx,lookIdx){const cv=document.getElementById('navMini');
  if(lookIdx!=null){ctx.fillStyle='#f3a14a';ctx.beginPath();ctx.arc(X(r.pts[lookIdx]),Y(r.pts[lookIdx]),4,0,7);ctx.fill();}
  ctx.fillStyle='#ff6a52';ctx.beginPath();ctx.arc(X(r.B),Y(r.B),4,0,7);ctx.fill();
  ctx.fillStyle='#fff';ctx.strokeStyle='#27d3b5';ctx.lineWidth=2;ctx.beginPath();ctx.arc(X(r.pts[idx]),Y(r.pts[idx]),6,0,7);ctx.fill();ctx.stroke();}
+function drawNavElev(idx){const cv=document.getElementById('navElevChart');if(!cv||!NAV)return;
+ const r=NAV.r,dpr=window.devicePixelRatio||1,w=cv.clientWidth||520,h=92;
+ cv.width=w*dpr;cv.height=h*dpr;const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+ const pad=8,el=r.elev,eMin=Math.min(...el),eMax=Math.max(...el),eR=Math.max(10,eMax-eMin),mx=r.km;
+ const xx=km=>pad+(km/mx)*(w-2*pad),yy=v=>(h-pad)-((v-eMin)/eR)*(h-2*pad-4);
+ // full elevation area
+ ctx.beginPath();ctx.moveTo(pad,h-pad);for(let i=0;i<el.length;i++)ctx.lineTo(xx(r.distKm[i]),yy(el[i]));ctx.lineTo(w-pad,h-pad);ctx.closePath();
+ const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,'rgba(58,90,102,.55)');g.addColorStop(1,'rgba(58,90,102,.06)');ctx.fillStyle=g;ctx.fill();
+ ctx.strokeStyle='#3a5a66';ctx.lineWidth=1.2;ctx.beginPath();for(let i=0;i<el.length;i++){const x=xx(r.distKm[i]),y=yy(el[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();
+ // traveled portion
+ ctx.strokeStyle='#27d3b5';ctx.lineWidth=2.2;ctx.beginPath();for(let i=0;i<=idx;i++){const x=xx(r.distKm[i]),y=yy(el[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();
+ // current marker + crosshair
+ const cx=xx(r.distKm[idx]),cy=yy(el[idx]);
+ ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(cx,pad);ctx.lineTo(cx,h-pad);ctx.stroke();
+ ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,4.5,0,7);ctx.fill();
+ ctx.fillStyle='#8aa3ab';ctx.font='10px JetBrains Mono';ctx.textAlign='left';ctx.fillText(Math.round(eMax)+' m',5,12);ctx.fillText(Math.round(eMin)+' m',5,h-5);
+ ctx.textAlign='right';ctx.fillStyle='#27d3b5';ctx.fillText(Math.round(el[idx])+' m',w-5,12);}
 
 /* ===== finish + rating ===== */
 function finishNav(){if(!NAV)return;
  if(NAV.timer)clearInterval(NAV.timer);if(NAV.elapsedTimer)clearInterval(NAV.elapsedTimer);
  if(NAV.watch!=null)navigator.geolocation.clearWatch(NAV.watch);
+ tjsChaseStop();vStop();
  const r=NAV.r,ctx=NAV.ctx,N=r.pts.length,maxIdx=Math.max(2,NAV.maxIdx);
  // fill gaps in vActMs over [0,maxIdx]
  const vAct=NAV.vActMs.slice();vAct[0]=vAct[0]??0;
@@ -746,10 +888,112 @@ function drawChartC(r,R){const cv=document.getElementById('chartC'),{ctx,w,h}=se
  ctx.beginPath();for(let i=0;i<=R.maxIdx;i++){const x=xx(r.distKm[i]),y=yy(R.vAct[i]*3.6);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.strokeStyle='#ffffff';ctx.lineWidth=1.6;ctx.stroke();
  ctx.fillStyle='#5f7882';ctx.textAlign='left';ctx.fillText(Math.round(sMax)+' km/h',w-PAD.r-2,PAD.t+8);}
 
+/* ============================================================
+   3D VIEW (three.js) - shared scene, orbit (results) + chase (nav)
+   ============================================================ */
+function powRGB01(kw){const m=powColor(kw).match(/\d+/g);return [m[0]/255,m[1]/255,m[2]/255];}
+const TJS={built:false,routeRef:null,scene:null,pos:null,verts:null,ext:1,ymid:0,exag:1,
+ orbit:{rn:null,cam:null,raf:0,az:0.6,el:0.7,rad:1,active:false,canvas:null},
+ chase:{rn:null,cam:null,raf:0,active:false,canvas:null}};
+
+function tjsBuild(r){
+ if(!window.THREE) return false;
+ if(TJS.built && TJS.routeRef===r) return true;
+ const N=r.pts.length, latRef=r.pts[Math.floor(N/2)].lat, mLon=111320*Math.cos(latRef*Math.PI/180), mLat=111320;
+ let minX=1e18,maxX=-1e18,minZ=1e18,maxZ=-1e18,eMin=1e18,eMax=-1e18;
+ const X=[],Z=[];
+ for(let i=0;i<N;i++){const x=(r.pts[i].lon-r.pts[0].lon)*mLon, z=-(r.pts[i].lat-r.pts[0].lat)*mLat;
+  X.push(x);Z.push(z);minX=Math.min(minX,x);maxX=Math.max(maxX,x);minZ=Math.min(minZ,z);maxZ=Math.max(maxZ,z);
+  eMin=Math.min(eMin,r.elev[i]);eMax=Math.max(eMax,r.elev[i]);}
+ const cx=(minX+maxX)/2, cz=(minZ+maxZ)/2, ext=Math.max(maxX-minX,maxZ-minZ,50);
+ const exag=(ext*0.14)/Math.max(eMax-eMin,1);
+ const verts=[]; for(let i=0;i<N;i++)verts.push({x:X[i]-cx,y:(r.elev[i]-eMin)*exag,z:Z[i]-cz});
+ TJS.verts=verts;TJS.ext=ext;TJS.exag=exag;TJS.ymid=(eMax-eMin)*exag*0.4;
+
+ const scene=new THREE.Scene();scene.background=new THREE.Color(0x0a1316);
+ // ribbon (curtain) following the route, height=elevation
+ const pos=[],col=[],idx=[];
+ for(let i=0;i<N;i++){const v=verts[i];pos.push(v.x,v.y,v.z, v.x,0,v.z);
+  const c=powRGB01(r.segPower[Math.min(i,N-2)]);col.push(c[0],c[1],c[2], c[0]*0.3,c[1]*0.3,c[2]*0.3);}
+ for(let i=0;i<N-1;i++){const a=i*2,b=i*2+1,cc=(i+1)*2,d=(i+1)*2+1;idx.push(a,b,cc, b,d,cc);}
+ const g=new THREE.BufferGeometry();
+ g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+ g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+ g.setIndex(idx);g.computeVertexNormals();
+ const mat=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,transparent:true,opacity:0.9});
+ scene.add(new THREE.Mesh(g,mat));
+ // top line
+ const lp=[],lc=[];for(let i=0;i<N;i++){const v=verts[i];lp.push(v.x,v.y+0.4,v.z);const c=powRGB01(r.segPower[Math.min(i,N-2)]);lc.push(c[0],c[1],c[2]);}
+ const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(lp,3));lg.setAttribute('color',new THREE.Float32BufferAttribute(lc,3));
+ scene.add(new THREE.Line(lg,new THREE.LineBasicMaterial({vertexColors:true})));
+ // ground grid
+ const grid=new THREE.GridHelper(ext*1.4, 24, 0x1d343c, 0x16262c);scene.add(grid);
+ // markers
+ const sph=(c,rad)=>new THREE.Mesh(new THREE.SphereGeometry(rad,16,12),new THREE.MeshBasicMaterial({color:c}));
+ const mr=Math.max(ext*0.012,4);
+ const s0=sph(0x6ee87f,mr);s0.position.set(verts[0].x,verts[0].y,verts[0].z);scene.add(s0);
+ const s1=sph(0xff6a52,mr);s1.position.set(verts[N-1].x,verts[N-1].y,verts[N-1].z);scene.add(s1);
+ const pm=sph(0xffffff,mr*1.15);pm.position.set(verts[0].x,verts[0].y,verts[0].z);scene.add(pm);
+ TJS.scene=scene;TJS.pos=pm;TJS.built=true;TJS.routeRef=r;TJS.orbit.rad=ext*1.1;
+ return true;
+}
+function tjsRenderer(canvas){const rn=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
+ rn.setPixelRatio(Math.min(2,window.devicePixelRatio||1));return rn;}
+function tjsSize(canvas){const w=canvas.clientWidth||canvas.parentElement.clientWidth||600,h=canvas.clientHeight||420;return{w,h};}
+
+/* orbit (results panel) */
+function tjsOrbitStart(){const cv=document.getElementById('three');if(!tjsBuild(window.LAST))return;
+ const O=TJS.orbit;O.canvas=cv;if(!O.rn)O.rn=tjsRenderer(cv);
+ const{w,h}=tjsSize(cv);O.rn.setSize(w,h,false);
+ O.cam=new THREE.PerspectiveCamera(55,w/h,1,TJS.ext*8);
+ O.active=true;tjsAttachOrbit(cv);
+ const loop=()=>{if(!O.active)return;tjsOrbitCam();O.rn.render(TJS.scene,O.cam);O.raf=requestAnimationFrame(loop);};loop();}
+function tjsOrbitStop(){TJS.orbit.active=false;if(TJS.orbit.raf)cancelAnimationFrame(TJS.orbit.raf);}
+function tjsOrbitCam(){const O=TJS.orbit,el=Math.max(0.08,Math.min(1.45,O.el));
+ const x=O.rad*Math.cos(el)*Math.sin(O.az),y=O.rad*Math.sin(el)+TJS.ymid,z=O.rad*Math.cos(el)*Math.cos(O.az);
+ O.cam.position.set(x,y,z);O.cam.lookAt(0,TJS.ymid,0);}
+function tjsAttachOrbit(cv){if(cv._tjsAttached)return;cv._tjsAttached=true;let dragging=false,px=0,py=0;
+ const down=e=>{dragging=true;px=(e.touches?e.touches[0].clientX:e.clientX);py=(e.touches?e.touches[0].clientY:e.clientY);cv.style.cursor='grabbing';};
+ const move=e=>{if(!dragging)return;const cx=(e.touches?e.touches[0].clientX:e.clientX),cy=(e.touches?e.touches[0].clientY:e.clientY);
+  TJS.orbit.az-=(cx-px)*0.008;TJS.orbit.el+=(cy-py)*0.006;px=cx;py=cy;if(e.touches)e.preventDefault();};
+ const up=()=>{dragging=false;cv.style.cursor='grab';};
+ cv.addEventListener('mousedown',down);window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
+ cv.addEventListener('touchstart',down,{passive:false});cv.addEventListener('touchmove',move,{passive:false});cv.addEventListener('touchend',up);
+ cv.addEventListener('wheel',e=>{e.preventDefault();TJS.orbit.rad*=(1+Math.sign(e.deltaY)*0.08);TJS.orbit.rad=Math.max(TJS.ext*0.2,Math.min(TJS.ext*4,TJS.orbit.rad));},{passive:false});}
+
+/* chase (nav) */
+function tjsChaseStart(){const cv=document.getElementById('navThree');if(!tjsBuild(NAV.r))return;
+ const C=TJS.chase;C.canvas=cv;if(!C.rn)C.rn=tjsRenderer(cv);
+ const{w,h}=tjsSize(cv);C.rn.setSize(w,h,false);
+ C.cam=new THREE.PerspectiveCamera(62,w/h,0.5,TJS.ext*8);C.active=true;
+ const loop=()=>{if(!C.active)return;C.rn.render(TJS.scene,C.cam);C.raf=requestAnimationFrame(loop);};loop();}
+function tjsChaseStop(){TJS.chase.active=false;if(TJS.chase.raf)cancelAnimationFrame(TJS.chase.raf);}
+function tjsChaseUpdate(idx){if(!TJS.built||!TJS.chase.active||!TJS.chase.cam)return;const V=TJS.verts,N=V.length;
+ const i=Math.max(0,Math.min(N-1,idx));TJS.pos.position.set(V[i].x,V[i].y,V[i].z);
+ const la=Math.min(N-1,i+6),back=Math.max(40,TJS.ext*0.02);
+ let dx=V[la].x-V[i].x,dz=V[la].z-V[i].z;const len=Math.hypot(dx,dz)||1;dx/=len;dz/=len;
+ const cam=TJS.chase.cam;cam.position.set(V[i].x-dx*back,V[i].y+back*0.55+8,V[i].z-dz*back);
+ cam.lookAt(V[la].x,V[la].y+2,V[la].z);}
+
+/* ===== 2D/3D view toggle (results) ===== */
+segSetup('viewmode');
+document.getElementById('viewmode').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+ const v=b.getAttribute('data-v');const is3=v==='3d';
+ document.getElementById('map').style.display=is3?'none':'';
+ document.getElementById('three').style.display=is3?'':'none';
+ document.getElementById('three3dHint').style.display=is3?'':'none';
+ document.getElementById('three3dHint').textContent=t('three_hint');
+ if(is3){if(!window.THREE){document.getElementById('three3dHint').textContent='three.js ni na voljo.';return;}
+   TJS.built=false;tjsOrbitStart();}
+ else tjsOrbitStop();
+}));
+
 /* ===== init ===== */
 document.getElementById('footer').textContent=t('foot');
 window.addEventListener('load',()=>setTimeout(run,400));
-window.addEventListener('resize',()=>{if(window.LAST){drawChartA(window.LAST);drawChartB(window.LAST);}});
+window.addEventListener('resize',()=>{if(window.LAST){drawChartA(window.LAST);drawChartB(window.LAST);}
+ if(TJS.orbit.active&&TJS.orbit.rn){const{w,h}=tjsSize(document.getElementById('three'));TJS.orbit.rn.setSize(w,h,false);TJS.orbit.cam.aspect=w/h;TJS.orbit.cam.updateProjectionMatrix();}
+ if(TJS.chase.active&&TJS.chase.rn){const{w,h}=tjsSize(document.getElementById('navThree'));TJS.chase.rn.setSize(w,h,false);TJS.chase.cam.aspect=w/h;TJS.chase.cam.updateProjectionMatrix();}});
 </script>
 </body>
 </html>
