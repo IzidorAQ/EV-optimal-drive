@@ -346,7 +346,7 @@ const I18N={
   data_note:"Trasa: OSRM · Višine in vreme: Open-Meteo · Geokodiranje: Nominatim (OpenStreetMap). Podatki za i4 M50 so uradni (BMW); ostala vozila so modelirane ocene. GPS navigacija deluje le prek HTTPS in ob dovoljenju za lokacijo; sicer uporabi Demo vožnjo.",
   k_dist:"Razdalja",k_time:"Čas vožnje",k_energy:"Poraba",k_cons:"Povprečje",k_soc:"SoC ob prihodu",k_regen:"Regeneracija",k_avgspeed:"Povp. hitrost",k_climb:"Vzpon / spust",
   st_geo:"Geokodiranje naslovov…",st_weather:"Pridobivam vreme…",st_route:"Računam traso (OSRM)…",st_elev:"Pridobivam višine…",st_calc:"Optimiziram hitrostni profil…",st_done:"Izračun končan.",
-  st_geofail:"Geokodiranje ni uspelo, uporabljam privzete koordinate Krasa.",st_wx:"Vreme: ",st_err:"Napaka: ",
+  st_geofail:"Geokodiranje ni uspelo, uporabljam privzete koordinate Krasa.",st_wx:"Vreme: ",st_wxfail:"Vremena ni bilo mogoče pridobiti, uporabi ročne vrednosti.",st_elevfail:"Višin ni bilo mogoče pridobiti (raven teren); poskusi znova čez nekaj minut.",st_err:"Napaka: ",
   hd_rating:"Ocena vožnje",btn_closerating:"Nazaj na porabo",ch_optact:"Optimalno vs dejansko",lg_opt:"optimalno",lg_act:"dejansko",
   nav_opt:"optimalno",nav_remain:"Do cilja",nav_eta:"ETA",nav_soc:"SoC",nav_used:"Poraba",btn_end:"Končaj",nav_3d:"3D",nav_demospeed:"Hitrost predvajanja",nav_elev:"Višina",nav_grade:"Naklon",three_hint:"Vleci za vrtenje, kolešček za približanje. Višina je poudarjena za boljšo vidnost.",
   dir_hold:"OHRANI HITROST",dir_slow:"SPROSTI PLIN",dir_fast:"LAHKO HITREJE",
@@ -366,7 +366,7 @@ const I18N={
   data_note:"Route: OSRM · Elevation and weather: Open-Meteo · Geocoding: Nominatim (OpenStreetMap). i4 M50 figures are official (BMW); other vehicles are modeled estimates. GPS navigation needs HTTPS and location permission; otherwise use Demo drive.",
   k_dist:"Distance",k_time:"Drive time",k_energy:"Energy used",k_cons:"Average",k_soc:"Arrival SoC",k_regen:"Regenerated",k_avgspeed:"Avg speed",k_climb:"Climb / descent",
   st_geo:"Geocoding…",st_weather:"Fetching weather…",st_route:"Routing (OSRM)…",st_elev:"Fetching elevation…",st_calc:"Optimizing speed profile…",st_done:"Done.",
-  st_geofail:"Geocoding failed, using default Karst coordinates.",st_wx:"Weather: ",st_err:"Error: ",
+  st_geofail:"Geocoding failed, using default Karst coordinates.",st_wx:"Weather: ",st_wxfail:"Could not fetch weather, use manual values.",st_elevfail:"Could not fetch elevation (flat terrain); try again in a few minutes.",st_err:"Error: ",
   hd_rating:"Drive rating",btn_closerating:"Back to consumption",ch_optact:"Optimal vs actual",lg_opt:"optimal",lg_act:"actual",
   nav_opt:"optimal",nav_remain:"To dest.",nav_eta:"ETA",nav_soc:"SoC",nav_used:"Energy",btn_end:"End",nav_3d:"3D",nav_demospeed:"Playback speed",nav_elev:"Elevation",nav_grade:"Grade",three_hint:"Drag to rotate, wheel to zoom. Elevation is exaggerated for visibility.",
   dir_hold:"HOLD SPEED",dir_slow:"EASE OFF",dir_fast:"CAN GO FASTER",
@@ -427,9 +427,15 @@ async function geocode(q){const c=q.trim().match(/^(-?\d{1,2}\.\d+)\s*,\s*(-?\d{
  if(j&&j.length)return{lat:+j[0].lat,lon:+j[0].lon,label:j[0].display_name.split(',').slice(0,2).join(',')};
  const fb=FALLBACK[q.trim().toLowerCase()];if(fb)return{...fb,_fb:true};throw new Error('geocode '+q);}
 async function fetchWeather(lat,lon){
- const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m&timezone=auto`;
- const r=await fetch(url);const j=await r.json();
- return{temp:j.current.temperature_2m,wind:j.current.wind_speed_10m,dir:j.current.wind_direction_10m};}
+ // primary: Open-Meteo
+ try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m&timezone=auto`);
+  if(r.ok){const j=await r.json();if(j&&j.current&&j.current.temperature_2m!=null)
+   return{temp:j.current.temperature_2m,wind:j.current.wind_speed_10m,dir:j.current.wind_direction_10m,src:'Open-Meteo'};}}catch(e){}
+ // fallback: MET Norway
+ try{const r=await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`);
+  if(r.ok){const j=await r.json();const d=j.properties.timeseries[0].data.instant.details;
+   return{temp:d.air_temperature,wind:d.wind_speed*3.6,dir:d.wind_from_direction,src:'MET'};}}catch(e){}
+ throw new Error('weather');}
 async function route(a,b){const url=`https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`;
  const r=await fetch(url);const j=await r.json();if(!j.routes||!j.routes.length)throw new Error('OSRM');
  return j.routes[0].geometry.coordinates.map(c=>({lat:c[1],lon:c[0]}));}
@@ -438,6 +444,25 @@ function resample(pts,step){const out=[pts[0]];let acc=0;
   while(acc+segLen>=step){const f=(step-acc)/segLen;const np={lat:from.lat+(pts[i].lat-from.lat)*f,lon:from.lon+(pts[i].lon-from.lon)*f};out.push(np);from=np;segLen=hav(from,pts[i]);acc=0;}
   acc+=segLen;}
  out.push(pts[pts.length-1]);return out;}
+async function elevBatch(coords){
+ // primary: Open-Meteo elevation
+ try{const out=new Array(coords.length).fill(null);
+  for(let i=0;i<coords.length;i+=100){const ch=coords.slice(i,i+100);
+   const lat=ch.map(p=>p.lat.toFixed(6)).join(','),lon=ch.map(p=>p.lon.toFixed(6)).join(',');
+   const r=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);
+   if(!r.ok)throw 0;const j=await r.json();if(!j||!j.elevation)throw 0;j.elevation.forEach((e,k)=>out[i+k]=e);}
+  if(out.some(v=>v!=null&&v!==0))return out; throw 0;
+ }catch(e){}
+ // fallback: OpenTopoData EU-DEM 25 m
+ try{const out=new Array(coords.length).fill(null);
+  for(let i=0;i<coords.length;i+=100){const ch=coords.slice(i,i+100);
+   const locs=ch.map(p=>p.lat.toFixed(6)+','+p.lon.toFixed(6)).join('|');
+   const r=await fetch(`https://api.opentopodata.org/v1/eudem25m?locations=${locs}`);
+   if(!r.ok)throw 0;const j=await r.json();if(!j||!j.results)throw 0;j.results.forEach((res,k)=>out[i+k]=res.elevation);
+   if(i+100<coords.length)await new Promise(rr=>setTimeout(rr,1100));} // 1 req/s limit
+  if(out.some(v=>v!=null&&v!==0))return out;
+ }catch(e){}
+ return null;}
 async function fetchElevations(pts){const N=pts.length;
  // cumulative distance of route points
  const fineCum=new Array(N);fineCum[0]=0;for(let i=1;i<N;i++)fineCum[i]=fineCum[i-1]+hav(pts[i-1],pts[i]);
@@ -448,12 +473,14 @@ async function fetchElevations(pts){const N=pts.length;
   while(seg<N-2&&fineCum[seg+1]<d)seg++;
   const f=(d-fineCum[seg])/Math.max(1e-6,fineCum[seg+1]-fineCum[seg]);
   coarsePts.push({lat:pts[seg].lat+(pts[seg+1].lat-pts[seg].lat)*f,lon:pts[seg].lon+(pts[seg+1].lon-pts[seg].lon)*f});coarseCum.push(d);}
- // fetch coarse elevations
- const ce=new Array(coarsePts.length).fill(0),CH=100;
- for(let i=0;i<coarsePts.length;i+=CH){const ch=coarsePts.slice(i,i+CH);
-  const lat=ch.map(p=>p.lat.toFixed(6)).join(','),lon=ch.map(p=>p.lon.toFixed(6)).join(',');
-  const r=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);const j=await r.json();
-  if(j&&j.elevation)j.elevation.forEach((e,k)=>ce[i+k]=e);}
+ // fetch coarse elevations (Open-Meteo, fallback OpenTopoData)
+ const ce=await elevBatch(coarsePts);
+ if(!ce)return null; // signal total failure to caller
+ // fill any null/NaN from nearest valid sample
+ for(let i=0;i<ce.length;i++)if(ce[i]==null||isNaN(ce[i])){let a=null,b=null;
+  for(let j=i-1;j>=0;j--)if(ce[j]!=null&&!isNaN(ce[j])){a=ce[j];break;}
+  for(let j=i+1;j<ce.length;j++)if(ce[j]!=null&&!isNaN(ce[j])){b=ce[j];break;}
+  ce[i]=a!=null?a:(b!=null?b:0);}
  // smooth coarse (3-pt)
  const cs=ce.slice();for(let i=0;i<ce.length;i++){let s=0,n=0;for(let k=-1;k<=1;k++){const x=i+k;if(x>=0&&x<ce.length){s+=ce[x];n++;}}cs[i]=s/n;}
  // interpolate to route points by distance
@@ -554,20 +581,20 @@ document.getElementById('run').addEventListener('click',run);
 async function run(){const btn=document.getElementById('run');btn.disabled=true;
  try{
   const sQ=document.getElementById('start').value,dQ=document.getElementById('dest').value;
-  setStatus(t('st_geo'));let usedFb=false;
+  setStatus(t('st_geo'));let usedFb=false,weatherFail=false,elevFail=false;
   const A=await geocode(sQ),B=await geocode(dQ);if(A._fb||B._fb)usedFb=true;
   if(document.getElementById('autoWeather').checked){
    try{setStatus(t('st_weather'));const w=await fetchWeather(A.lat,A.lon);
     const temp=Math.round(Math.max(-15,Math.min(40,w.temp)));document.getElementById('temp').value=temp;document.getElementById('tempV').textContent=temp+" °C";
     const wind=Math.round(Math.max(0,Math.min(80,w.wind)));document.getElementById('wind').value=wind;document.getElementById('windV').textContent=wind+" km/h";
     const dir=(Math.round(w.dir/45)*45)%360;document.getElementById('winddir').value=String(dir);
-    setStatus(t('st_wx')+`${temp} °C, ${LANG==='sl'?'veter':'wind'} ${wind} km/h`,'ok');
-   }catch(e){/* keep manual */}
+   }catch(e){weatherFail=true;}
   }
   setStatus(t('st_route'));const raw=await route(A,B);
   let len=0;for(let i=1;i<raw.length;i++)len+=hav(raw[i-1],raw[i]);
   const pts=resample(raw,Math.max(15,len/700));
-  setStatus(t('st_elev'));const elev=await fetchElevations(pts);
+  setStatus(t('st_elev'));let elev=await fetchElevations(pts);
+  if(!elev){elevFail=true;elev=new Array(pts.length).fill(0);} // flat fallback if both providers fail
   setStatus(t('st_calc'));
   const params={veh:getVehicle(),pts,elev,
    temp:+document.getElementById('temp').value,soc:+document.getElementById('soc').value,
@@ -579,7 +606,8 @@ async function run(){const btn=document.getElementById('run');btn.disabled=true;
   const res=simulate(params);res.A=A;res.B=B;window.LAST=res;window.CTX=res.ctx;
   hideRating();render(res);
   document.getElementById('navBtn').disabled=false;document.getElementById('demoBtn').disabled=false;
-  if(!document.getElementById('status').classList.contains('ok'))setStatus(usedFb?t('st_geofail'):t('st_done'),usedFb?'err':'ok');
+  const warn=[]; if(usedFb)warn.push(t('st_geofail')); if(weatherFail)warn.push(t('st_wxfail')); if(elevFail)warn.push(t('st_elevfail'));
+  if(warn.length)setStatus(warn.join(' '),'err'); else setStatus(t('st_done'),'ok');
  }catch(e){console.error(e);setStatus(t('st_err')+e.message,'err');}finally{btn.disabled=false;}
 }
 
