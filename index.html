@@ -150,7 +150,9 @@ a{color:var(--teal)}
             <div id="vehInfo" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted2);margin-top:6px"></div>
           </div>
           <div class="divider"></div>
-          <div class="field"><label class="lbl" data-i="l_start">Začetek</label><input id="start" value="Zagrajec 11"></div>
+          <div class="field"><label class="lbl" data-i="l_start">Začetek</label>
+            <div style="display:flex;gap:8px"><input id="start" value="Zagrajec 11"><button id="locBtn" class="btn ghost" style="width:auto;padding:9px 13px;font-size:16px" title="Trenutna lokacija">📍</button></div>
+          </div>
           <div class="field"><label class="lbl" data-i="l_dest">Cilj</label><input id="dest" value="Komen 78"></div>
           <label class="chk" style="margin-top:4px"><input type="checkbox" id="autoWeather" checked><span data-i="l_autow">Samodejno vreme in veter (online)</span></label>
           <div class="divider"></div>
@@ -221,6 +223,7 @@ a{color:var(--teal)}
             </div>
             <div class="bars" id="ratingBars"></div>
           </div>
+          <div class="kpis" id="ratingStats" style="margin-top:14px"></div>
           <div class="charttitle" style="margin-top:14px">
             <span class="t" data-i="ch_optact">Optimalno vs dejansko</span>
             <span class="legend"><span><i style="background:var(--teal)"></i><span data-i="lg_opt">optimalno</span></span><span><i style="background:#fff"></i><span data-i="lg_act">dejansko</span></span></span>
@@ -810,8 +813,9 @@ function stepNav(idx,vActKmh){const r=NAV.r,opt=r.spdKmh[idx];
   const cur=Math.round(opt);
   if(Voice.lastCur==null||Math.abs(cur-Voice.lastCur)>=5){vEnqueue('cur',String(cur));Voice.lastCur=cur;}
   if(minAt!=null&&minOpt<opt-8){const dd=(r.distKm[minAt]-d0)*1000;
-   if(dd>=40&&dd<=240){const key=Math.round(minOpt)+'@'+Math.round(minAt/4);
-    if(key!==Voice.lastCornerKey){vEnqueue('corner',Math.round(minOpt)+' '+(LANG==='sl'?'naprej':'ahead'));Voice.lastCornerKey=key;}}}
+   if(dd>=40&&dd<=250){const key=Math.round(minOpt)+'@'+Math.round(minAt/4);
+    if(key!==Voice.lastCornerKey){const dm=Math.round(dd/10)*10;
+     vEnqueue('corner',Math.round(minOpt)+(LANG==='sl'?(' čez '+dm+' metrov'):(' in '+dm+' meters')));Voice.lastCornerKey=key;}}}
  }
  const remKm=Math.max(0,r.km-r.distKm[idx]);document.getElementById('navRemain').textContent=remKm.toFixed(1);
  const etaS=Math.max(0,r.time-r.cumTime[idx]);document.getElementById('navEta').textContent=`${Math.floor(etaS/60)}:${String(Math.round(etaS%60)).padStart(2,'0')}`;
@@ -879,8 +883,13 @@ function finishNav(){if(!NAV)return;
   if(dev>6){fastD+=d;cls[i]=1;}else if(dev<-6){slowD+=d;cls[i]=-1;}else{okD+=d;}}
  const meanAbs=tot>0?sumAbs/tot:0;
  let score=Math.round(Math.max(0,Math.min(100,100-meanAbs*2.2-Math.max(0,extraPct)*0.8)));
+ const coveredKm=r.distKm[maxIdx];
+ const avgSpeed=epAct.time>0?coveredKm/(epAct.time/3600):0;
+ let maxSpeed=0;for(let i=0;i<=maxIdx;i++)maxSpeed=Math.max(maxSpeed,vAct[i]*3.6);
  navEl.classList.remove('show');
- showRating(r,{score,extraPct,okPct:okD/tot*100,fastPct:fastD/tot*100,slowPct:slowD/tot*100,cls,vAct,maxIdx,actWh:epAct.Wh,optWh:epOpt.Wh});
+ showRating(r,{score,extraPct,okPct:okD/tot*100,fastPct:fastD/tot*100,slowPct:slowD/tot*100,cls,vAct,maxIdx,
+  actWh:epAct.Wh,optWh:epOpt.Wh,km:coveredKm,time:epAct.time,avgSpeed,maxSpeed,
+  regenKwh:epAct.regenKwh,climb:epAct.climb,descent:epAct.descent,whkm:coveredKm>0?epAct.Wh/coveredKm:0,optTime:epOpt.time});
  NAV=null;
 }
 function hideRating(){document.getElementById('ratingCard').style.display='none';}
@@ -898,6 +907,20 @@ function showRating(r,R){
    : `<div class="bar"><span style="min-width:78px">${t('saved')}</span><span style="color:#6ee87f;font-weight:700">${R.extraPct.toFixed(1)}%</span></div>`;
  document.getElementById('ratingBars').innerHTML=
    bar(t('bar_ok'),R.okPct,'#6ee87f')+bar(t('bar_fast'),R.fastPct,'#ff6a52')+bar(t('bar_slow'),R.slowPct,'#4aa8ff')+energyLine;
+ // detailed stats grid
+ const fmtT=s=>{const m=Math.round(s/60);return m>=60?`${Math.floor(m/60)}h ${m%60}min`:`${m} min`;};
+ const stats=[
+  {k:t('k_dist'),v:R.km.toFixed(1),u:'km'},
+  {k:t('k_time'),v:fmtT(R.time),u:''},
+  {k:t('k_avgspeed'),v:Math.round(R.avgSpeed),u:'km/h'},
+  {k:(sl?'Najvišja':'Top speed'),v:Math.round(R.maxSpeed),u:'km/h'},
+  {k:t('k_energy'),v:(R.actWh/1000).toFixed(2),u:'kWh',c:'warn'},
+  {k:t('k_cons'),v:Math.round(R.whkm),u:'Wh/km',c:'warn'},
+  {k:t('k_regen'),v:R.regenKwh.toFixed(2),u:'kWh',c:'regen'},
+  {k:t('k_climb'),v:Math.round(R.climb),u:'m',sub:`↓ ${Math.round(R.descent)} m`},
+  {k:(sl?'Δ čas vs opt.':'Δ time vs opt.'),v:((R.time-R.optTime)>=0?'+':'')+Math.round((R.time-R.optTime)/60*10)/10,u:'min'},
+ ];
+ document.getElementById('ratingStats').innerHTML=stats.map(x=>`<div class="kpi ${x.c||''}"><div class="k">${x.k}</div><div class="v">${x.v} <small>${x.u}</small></div>${x.sub?`<div class="v2">${x.sub}</div>`:''}</div>`).join('');
  // recolor map by deviation
  routeLayer.clearLayers();
  for(let i=0;i<r.pts.length-1;i++){let c='#2a4a54';if(i<R.maxIdx)c=R.cls[i]===1?'#ff6a52':R.cls[i]===-1?'#4aa8ff':'#6ee87f';
@@ -1030,7 +1053,24 @@ document.getElementById('viewmode').querySelectorAll('button').forEach(b=>b.addE
 
 /* ===== init ===== */
 document.getElementById('footer').textContent=t('foot');
-window.addEventListener('load',()=>setTimeout(run,400));
+document.getElementById('locBtn').addEventListener('click',()=>{
+ if(!('geolocation'in navigator)){setStatus(LANG==='sl'?'GPS ni na voljo.':'GPS unavailable.','err');return;}
+ setStatus(LANG==='sl'?'Iščem trenutno lokacijo…':'Locating…');
+ navigator.geolocation.getCurrentPosition(
+  pos=>{document.getElementById('start').value=pos.coords.latitude.toFixed(5)+','+pos.coords.longitude.toFixed(5);run();},
+  ()=>{setStatus(LANG==='sl'?'Lokacije ni bilo mogoče dobiti (dovoli dostop).':'Could not get location (allow access).','err');},
+  {enableHighAccuracy:true,timeout:8000,maximumAge:60000});
+});
+window.addEventListener('load',()=>{
+ const go=()=>setTimeout(run,200);
+ if('geolocation'in navigator){
+  setStatus(LANG==='sl'?'Iščem trenutno lokacijo…':'Locating…');
+  navigator.geolocation.getCurrentPosition(
+   pos=>{document.getElementById('start').value=pos.coords.latitude.toFixed(5)+','+pos.coords.longitude.toFixed(5);go();},
+   ()=>{go();}, // permission denied / unavailable -> keep default Zagrajec 11
+   {enableHighAccuracy:true,timeout:7000,maximumAge:60000});
+ } else go();
+});
 window.addEventListener('resize',()=>{if(window.LAST){drawChartA(window.LAST);drawChartB(window.LAST);}
  if(TJS.orbit.active&&TJS.orbit.rn){const{w,h}=tjsSize(document.getElementById('three'));TJS.orbit.rn.setSize(w,h,false);TJS.orbit.cam.aspect=w/h;TJS.orbit.cam.updateProjectionMatrix();}
  if(TJS.chase.active&&TJS.chase.rn){const{w,h}=tjsSize(document.getElementById('navThree'));TJS.chase.rn.setSize(w,h,false);TJS.chase.cam.aspect=w/h;TJS.chase.cam.updateProjectionMatrix();}});
