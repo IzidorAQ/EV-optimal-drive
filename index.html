@@ -175,6 +175,10 @@ a{color:var(--teal)}
             <div class="field"><label class="lbl" data-i="l_vmax">Maks. hitrost</label><div class="rangewrap"><input type="range" id="vmax" min="50" max="150" value="100" step="5"><span class="rngval" id="vmaxV">100</span></div></div>
             <div class="field"><label class="lbl" data-i="l_comfort">Ovinki (g)</label><div class="rangewrap"><input type="range" id="alat" min="15" max="50" value="30"><span class="rngval" id="alatV">0.30 g</span></div></div>
           </div>
+          <div class="field"><label class="lbl" data-i="l_opt">Optimizacija hitrosti</label>
+            <div class="seg" id="optmode"><button data-o="cruise" class="on" data-i="o_cruise">Konstantna</button><button data-o="terrain" data-i="o_terrain">Eko po terenu</button></div>
+            <div class="hint" id="optHint" data-i="opt_hint"></div>
+          </div>
           <div class="spacer"></div>
           <button class="btn" id="run" data-i="btn_run">Izračunaj optimalno vožnjo</button>
           <button class="btn nav" id="navBtn" disabled data-i="btn_nav">▶ Navigacija (GPS)</button>
@@ -314,7 +318,7 @@ const I18N={
   hd_params:"Parametri vožnje",l_vehicle:"Vozilo",l_start:"Začetek",l_dest:"Cilj",l_autow:"Samodejno vreme in veter (online)",
   l_temp:"Temperatura",l_soc:"Začetni SoC",l_weather:"Vreme / podlaga",w_dry:"Suho",w_rain:"Dež",w_snow:"Sneg",
   l_wind:"Veter",l_winddir:"Smer (od)",wd_none:"brez",l_pax:"Potniki",l_cargo:"Tovor (kg)",l_climate:"Klima / ogrevanje",c_on:"Vključeno",c_off:"Izključeno",
-  l_style:"Slog",l_vmax:"Maks. hitrost",l_comfort:"Ovinki (g)",btn_run:"Izračunaj optimalno vožnjo",btn_nav:"▶ Navigacija (GPS)",btn_demo:"Demo vožnja (brez GPS)",
+  l_style:"Slog",l_vmax:"Maks. hitrost",l_comfort:"Ovinki (g)",l_opt:"Optimizacija hitrosti",o_cruise:"Konstantna",o_terrain:"Eko po terenu",opt_hint:"Konstantna drži potovalno hitrost; Eko po terenu zniža hitrost v klanec in jo dvigne navzdol (konstantna potovalna moč, navzdol raje drsenje kot regen).",btn_run:"Izračunaj optimalno vožnjo",btn_nav:"▶ Navigacija (GPS)",btn_demo:"Demo vožnja (brez GPS)",
   hd_route:"Trasa · barva = poraba",lg_regen:"regen",lg_low:"nizka",lg_high:"visoka",
   ch_terrain:"Teren in hitrost",ch_elev:"višina",ch_speed:"hitrost",ch_power:"Moč na bateriji in SoC",ch_cons:"poraba",ch_regen:"regen",
   data_note:"Trasa: OSRM · Višine in vreme: Open-Meteo · Geokodiranje: Nominatim (OpenStreetMap). Podatki za i4 M50 so uradni (BMW); ostala vozila so modelirane ocene. GPS navigacija deluje le prek HTTPS in ob dovoljenju za lokacijo; sicer uporabi Demo vožnjo.",
@@ -334,7 +338,7 @@ const I18N={
   hd_params:"Trip parameters",l_vehicle:"Vehicle",l_start:"Start",l_dest:"Destination",l_autow:"Auto weather and wind (online)",
   l_temp:"Temperature",l_soc:"Start SoC",l_weather:"Weather / surface",w_dry:"Dry",w_rain:"Rain",w_snow:"Snow",
   l_wind:"Wind",l_winddir:"Dir (from)",wd_none:"none",l_pax:"Passengers",l_cargo:"Cargo (kg)",l_climate:"Climate / heating",c_on:"On",c_off:"Off",
-  l_style:"Style",l_vmax:"Max speed",l_comfort:"Corners (g)",btn_run:"Compute optimal drive",btn_nav:"▶ Navigation (GPS)",btn_demo:"Demo drive (no GPS)",
+  l_style:"Style",l_vmax:"Max speed",l_comfort:"Corners (g)",l_opt:"Speed optimization",o_cruise:"Constant",o_terrain:"Terrain eco",opt_hint:"Constant holds the cruise speed; Terrain eco slows uphill and speeds up downhill (constant cruise power, coasting preferred over regen on descents).",btn_run:"Compute optimal drive",btn_nav:"▶ Navigation (GPS)",btn_demo:"Demo drive (no GPS)",
   hd_route:"Route · color = consumption",lg_regen:"regen",lg_low:"low",lg_high:"high",
   ch_terrain:"Terrain and speed",ch_elev:"elevation",ch_speed:"speed",ch_power:"Battery power and SoC",ch_cons:"consumption",ch_regen:"regen",
   data_note:"Route: OSRM · Elevation and weather: Open-Meteo · Geocoding: Nominatim (OpenStreetMap). i4 M50 figures are official (BMW); other vehicles are modeled estimates. GPS navigation needs HTTPS and location permission; otherwise use Demo drive.",
@@ -381,7 +385,7 @@ function updateStyleLbl(){const s=+document.getElementById('style').value,sl=LAN
  document.getElementById('styleLbl').textContent=lab;}
 updateStyleLbl();
 function segSetup(id){const c=document.getElementById(id);c.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{c.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');}));}
-segSetup('weather');segSetup('climate');
+segSetup('weather');segSetup('climate');segSetup('optmode');
 function segVal(id,a){return document.getElementById(id).querySelector('button.on').getAttribute(a);}
 
 /* ===== map ===== */
@@ -442,7 +446,13 @@ function buildContext(p){
  const targetCruise=eco+(vmax-eco)*(p.style/100);
  const vCorner=new Array(N).fill(vmax);
  for(let i=1;i<N-1;i++)vCorner[i]=Math.min(vmax,Math.sqrt(aLat*curveRadius(p.pts[i-1],p.pts[i],p.pts[i+1],latRef)));
- const vlim=new Array(N);for(let i=0;i<N;i++)vlim[i]=Math.min(targetCruise,vmax,vCorner[i]);
+ // per-point smoothed grade for terrain-eco targeting
+ const gp=new Array(N).fill(0);
+ for(let i=0;i<N;i++){let s=0,n=0;for(let k=-3;k<=2;k++){const si=i+k;if(si>=0&&si<N-1){s+=grade[si];n++;}}gp[i]=n?s/n:0;}
+ // constant-power target: hold the flat-cruise wheel power across grades (slower up, faster down)
+ const Cda=0.5*rho*veh.cd*veh.A,Pref=(Cda*targetCruise*targetCruise+crr*m*G)*targetCruise,floor=Math.max(0.6*targetCruise,8.33);
+ const gradeTarget=th=>{const Fg=crr*m*G*Math.cos(th)+m*G*Math.sin(th);for(let v=vmax;v>=floor;v-=0.4){if((Cda*v*v+Fg)*v<=Pref)return v;}return floor;};
+ const vlim=new Array(N);for(let i=0;i<N;i++){const base=p.optMode==='terrain'?gradeTarget(gp[i]):targetCruise;vlim[i]=Math.min(base,vmax,vCorner[i]);}
  return{veh,N,m,rho,crr,Paux,aAccel,aDecel,ds,grade,head,distKm,totalLen,latRef,vmax,eco,targetCruise,vCorner,vlim,
    pRegenMax:veh.pRegen*1000,battCapJ:veh.batt*3.6e6,soc:p.soc,windFrom:p.windDir,windMs:p.wind/3.6,elev:p.elev,pts:p.pts,weather:p.weather};
 }
@@ -497,7 +507,8 @@ async function run(){const btn=document.getElementById('run');btn.disabled=true;
    weather:segVal('weather','data-w'),climate:segVal('climate','data-c')==='on',
    wind:+document.getElementById('wind').value,windDir:+document.getElementById('winddir').value,
    pax:Math.max(1,+document.getElementById('pax').value||1),cargo:Math.max(0,+document.getElementById('cargo').value||0),
-   style:+document.getElementById('style').value,vmax:+document.getElementById('vmax').value,alatRaw:+document.getElementById('alat').value};
+   style:+document.getElementById('style').value,vmax:+document.getElementById('vmax').value,alatRaw:+document.getElementById('alat').value,
+   optMode:segVal('optmode','data-o')};
   const res=simulate(params);res.A=A;res.B=B;window.LAST=res;window.CTX=res.ctx;
   hideRating();render(res);
   document.getElementById('navBtn').disabled=false;document.getElementById('demoBtn').disabled=false;
