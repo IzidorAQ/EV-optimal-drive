@@ -444,25 +444,35 @@ function resample(pts,step){const out=[pts[0]];let acc=0;
   while(acc+segLen>=step){const f=(step-acc)/segLen;const np={lat:from.lat+(pts[i].lat-from.lat)*f,lon:from.lon+(pts[i].lon-from.lon)*f};out.push(np);from=np;segLen=hav(from,pts[i]);acc=0;}
   acc+=segLen;}
  out.push(pts[pts.length-1]);return out;}
-async function elevBatch(coords){
- // primary: Open-Meteo elevation
+async function elevGet(url){const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}
+async function elevBatch(coords){let lastErr='';
+ // 1) Open-Meteo (one retry for transient rate limits)
+ for(let attempt=0;attempt<2;attempt++){
+  try{const out=new Array(coords.length).fill(null);
+   for(let i=0;i<coords.length;i+=100){const ch=coords.slice(i,i+100);
+    const lat=ch.map(p=>p.lat.toFixed(6)).join(','),lon=ch.map(p=>p.lon.toFixed(6)).join(',');
+    const j=await elevGet(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);
+    if(!j||!j.elevation)throw new Error('no data');j.elevation.forEach((e,k)=>out[i+k]=e);}
+   if(out.some(v=>v!=null)){window.__elevSrc='Open-Meteo';return out;}throw new Error('empty');
+  }catch(e){lastErr='Open-Meteo: '+e.message;if(attempt===0)await new Promise(r=>setTimeout(r,1500));}}
+ // 2) OpenTopoData EU-DEM 25 m
  try{const out=new Array(coords.length).fill(null);
   for(let i=0;i<coords.length;i+=100){const ch=coords.slice(i,i+100);
-   const lat=ch.map(p=>p.lat.toFixed(6)).join(','),lon=ch.map(p=>p.lon.toFixed(6)).join(',');
-   const r=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);
-   if(!r.ok)throw 0;const j=await r.json();if(!j||!j.elevation)throw 0;j.elevation.forEach((e,k)=>out[i+k]=e);}
-  if(out.some(v=>v!=null&&v!==0))return out; throw 0;
- }catch(e){}
- // fallback: OpenTopoData EU-DEM 25 m
+   const locs=encodeURIComponent(ch.map(p=>p.lat.toFixed(6)+','+p.lon.toFixed(6)).join('|'));
+   const j=await elevGet(`https://api.opentopodata.org/v1/eudem25m?locations=${locs}`);
+   if(!j||!j.results)throw new Error('no data');j.results.forEach((res,k)=>out[i+k]=res.elevation);
+   if(i+100<coords.length)await new Promise(r=>setTimeout(r,1100));}
+  if(out.some(v=>v!=null)){window.__elevSrc='OpenTopoData';return out;}throw new Error('empty');
+ }catch(e){lastErr+=' | OpenTopoData: '+e.message;}
+ // 3) Open-Elevation
  try{const out=new Array(coords.length).fill(null);
   for(let i=0;i<coords.length;i+=100){const ch=coords.slice(i,i+100);
-   const locs=ch.map(p=>p.lat.toFixed(6)+','+p.lon.toFixed(6)).join('|');
-   const r=await fetch(`https://api.opentopodata.org/v1/eudem25m?locations=${locs}`);
-   if(!r.ok)throw 0;const j=await r.json();if(!j||!j.results)throw 0;j.results.forEach((res,k)=>out[i+k]=res.elevation);
-   if(i+100<coords.length)await new Promise(rr=>setTimeout(rr,1100));} // 1 req/s limit
-  if(out.some(v=>v!=null&&v!==0))return out;
- }catch(e){}
- return null;}
+   const locs=encodeURIComponent(ch.map(p=>p.lat.toFixed(6)+','+p.lon.toFixed(6)).join('|'));
+   const j=await elevGet(`https://api.open-elevation.com/api/v1/lookup?locations=${locs}`);
+   if(!j||!j.results)throw new Error('no data');j.results.forEach((res,k)=>out[i+k]=res.elevation);}
+  if(out.some(v=>v!=null)){window.__elevSrc='Open-Elevation';return out;}throw new Error('empty');
+ }catch(e){lastErr+=' | Open-Elevation: '+e.message;}
+ window.__elevErr=lastErr;window.__elevSrc=null;return null;}
 async function fetchElevations(pts){const N=pts.length;
  // cumulative distance of route points
  const fineCum=new Array(N);fineCum[0]=0;for(let i=1;i<N;i++)fineCum[i]=fineCum[i-1]+hav(pts[i-1],pts[i]);
@@ -606,8 +616,10 @@ async function run(){const btn=document.getElementById('run');btn.disabled=true;
   const res=simulate(params);res.A=A;res.B=B;window.LAST=res;window.CTX=res.ctx;
   hideRating();render(res);
   document.getElementById('navBtn').disabled=false;document.getElementById('demoBtn').disabled=false;
-  const warn=[]; if(usedFb)warn.push(t('st_geofail')); if(weatherFail)warn.push(t('st_wxfail')); if(elevFail)warn.push(t('st_elevfail'));
-  if(warn.length)setStatus(warn.join(' '),'err'); else setStatus(t('st_done'),'ok');
+  const warn=[]; if(usedFb)warn.push(t('st_geofail')); if(weatherFail)warn.push(t('st_wxfail'));
+  if(elevFail)warn.push(t('st_elevfail')+(window.__elevErr?' ['+window.__elevErr+']':''));
+  if(warn.length)setStatus(warn.join(' '),'err');
+  else setStatus(t('st_done')+(window.__elevSrc?' · '+(LANG==='sl'?'višine':'elevation')+': '+window.__elevSrc:''),'ok');
  }catch(e){console.error(e);setStatus(t('st_err')+e.message,'err');}finally{btn.disabled=false;}
 }
 
