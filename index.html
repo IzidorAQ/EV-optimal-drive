@@ -895,7 +895,7 @@ function finishNav(){if(!NAV)return;
 function hideRating(){document.getElementById('ratingCard').style.display='none';}
 document.getElementById('closeRating').addEventListener('click',()=>{hideRating();if(window.LAST){colorByConsumption(window.LAST);map.fitBounds(L.latLngBounds(window.LAST.pts.map(p=>[p.lat,p.lon])),{padding:[24,24]});}});
 function showRating(r,R){
- const card=document.getElementById('ratingCard');card.style.display='';
+ const card=document.getElementById('ratingCard');card.style.display='block';
  const sl=LANG==='sl';
  document.getElementById('scoreVal').textContent=R.score;
  const col=R.score>=85?'#6ee87f':R.score>=70?'#27d3b5':R.score>=50?'#f3a14a':'#ff6a52';
