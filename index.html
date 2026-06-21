@@ -153,6 +153,11 @@ a{color:var(--teal)}
           <div class="field"><label class="lbl" data-i="l_start">Začetek</label>
             <div style="display:flex;gap:8px"><input id="start" value="Zagrajec 11"><button id="locBtn" class="btn ghost" style="width:auto;padding:9px 13px;font-size:16px" title="Trenutna lokacija">📍</button></div>
           </div>
+          <div id="stops"></div>
+          <div style="display:flex;gap:8px;margin-bottom:13px">
+            <button id="addStop" class="btn ghost" style="flex:1;padding:9px;font-size:12.5px">+ <span data-i="btn_addstop">dodaj postanek</span></button>
+            <button id="swapBtn" class="btn ghost" style="width:auto;padding:9px 14px;font-size:17px" title="Zamenjaj začetek in cilj">⇅</button>
+          </div>
           <div class="field"><label class="lbl" data-i="l_dest">Cilj</label><input id="dest" value="Komen 78"></div>
           <label class="chk" style="margin-top:4px"><input type="checkbox" id="autoWeather" checked><span data-i="l_autow">Samodejno vreme in veter (online)</span></label>
           <div class="divider"></div>
@@ -346,6 +351,7 @@ const I18N={
  sl:{eyebrow:"Kras • Energetski profil vožnje",title1:"EV Eko-vožnja",title2:"/ simulator + navigacija",
   sub:"Optimalna hitrost za vsak segment, dejansko vreme, GPS navigacija in ocena vožnje",
   hd_params:"Parametri vožnje",l_vehicle:"Vozilo",l_start:"Začetek",l_dest:"Cilj",l_autow:"Samodejno vreme in veter (online)",
+  l_stop:"Postanek",ph_stop:"naslov ali lat,lon",btn_addstop:"dodaj postanek",
   l_temp:"Temperatura",l_soc:"Začetni SoC",l_weather:"Vreme / podlaga",w_dry:"Suho",w_rain:"Dež",w_snow:"Sneg",
   l_wind:"Veter",l_winddir:"Smer (od)",wd_none:"brez",l_pax:"Potniki",l_cargo:"Tovor (kg)",l_climate:"Klima / ogrevanje",c_on:"Vključeno",c_off:"Izključeno",
   l_style:"Slog",l_vmax:"Maks. hitrost",l_comfort:"Ovinki (g)",l_opt:"Optimizacija hitrosti",o_cruise:"Konstantna",o_optimal:"Optimalno",opt_hint:"Optimalno z dinamičnim programiranjem poišče hitrostni profil z najnižjo skupno porabo (jadranje pred ovinki, minimalno zaviranje). Drsnik Slog uravnava razmerje poraba/čas: maks. doseg = najnižja poraba.",btn_run:"Izračunaj optimalno vožnjo",btn_nav:"▶ Navigacija (GPS)",btn_demo:"Demo vožnja (brez GPS)",
@@ -366,6 +372,7 @@ const I18N={
  en:{eyebrow:"Karst • Driving energy profile",title1:"EV Eco-drive",title2:"/ simulator + navigation",
   sub:"Per-segment optimal speed, live weather, GPS navigation and drive rating",
   hd_params:"Trip parameters",l_vehicle:"Vehicle",l_start:"Start",l_dest:"Destination",l_autow:"Auto weather and wind (online)",
+  l_stop:"Stop",ph_stop:"address or lat,lon",btn_addstop:"add stop",
   l_temp:"Temperature",l_soc:"Start SoC",l_weather:"Weather / surface",w_dry:"Dry",w_rain:"Rain",w_snow:"Snow",
   l_wind:"Wind",l_winddir:"Dir (from)",wd_none:"none",l_pax:"Passengers",l_cargo:"Cargo (kg)",l_climate:"Climate / heating",c_on:"On",c_off:"Off",
   l_style:"Style",l_vmax:"Max speed",l_comfort:"Corners (g)",l_opt:"Speed optimization",o_cruise:"Constant",o_optimal:"Optimal",opt_hint:"Optimal uses dynamic programming to find the lowest total-energy speed profile (coasting into corners, minimal braking). The Style slider sets the energy/time trade-off: max range = lowest consumption.",btn_run:"Compute optimal drive",btn_nav:"▶ Navigation (GPS)",btn_demo:"Demo drive (no GPS)",
@@ -446,6 +453,10 @@ async function fetchWeather(lat,lon){
  throw new Error('weather');}
 async function route(a,b){const url=`https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`;
  const r=await fetch(url);const j=await r.json();if(!j.routes||!j.routes.length)throw new Error('OSRM');
+ return j.routes[0].geometry.coordinates.map(c=>({lat:c[1],lon:c[0]}));}
+async function routeMulti(coords){const path=coords.map(c=>`${c.lon},${c.lat}`).join(';');
+ const r=await fetch(`https://router.project-osrm.org/route/v1/driving/${path}?overview=full&geometries=geojson`);
+ const j=await r.json();if(!j.routes||!j.routes.length)throw new Error('OSRM');
  return j.routes[0].geometry.coordinates.map(c=>({lat:c[1],lon:c[0]}));}
 function resample(pts,step){const out=[pts[0]];let acc=0;
  for(let i=1;i<pts.length;i++){let segLen=hav(pts[i-1],pts[i]);if(segLen<1e-6)continue;let from=pts[i-1];
@@ -599,8 +610,12 @@ document.getElementById('run').addEventListener('click',run);
 async function run(){const btn=document.getElementById('run');btn.disabled=true;
  try{
   const sQ=document.getElementById('start').value,dQ=document.getElementById('dest').value;
+  const stopQ=getStops();
   setStatus(t('st_geo'));let usedFb=false,weatherFail=false,elevFail=false;
-  const A=await geocode(sQ),B=await geocode(dQ);if(A._fb||B._fb)usedFb=true;
+  const queries=[sQ,...stopQ,dQ],geo=[];
+  for(let i=0;i<queries.length;i++){if(i>0&&queries.length>2)await new Promise(rr=>setTimeout(rr,1100));
+   const p=await geocode(queries[i]);if(p._fb)usedFb=true;geo.push(p);}
+  const A=geo[0],B=geo[geo.length-1],stopPts=geo.slice(1,-1);
   if(document.getElementById('autoWeather').checked){
    try{setStatus(t('st_weather'));const w=await fetchWeather(A.lat,A.lon);
     const temp=Math.round(Math.max(-15,Math.min(40,w.temp)));document.getElementById('temp').value=temp;document.getElementById('tempV').textContent=temp+" °C";
@@ -608,7 +623,7 @@ async function run(){const btn=document.getElementById('run');btn.disabled=true;
     const dir=(Math.round(w.dir/45)*45)%360;document.getElementById('winddir').value=String(dir);
    }catch(e){weatherFail=true;}
   }
-  setStatus(t('st_route'));const raw=await route(A,B);
+  setStatus(t('st_route'));const raw=await routeMulti([A,...stopPts,B]);
   let len=0;for(let i=1;i<raw.length;i++)len+=hav(raw[i-1],raw[i]);
   const pts=resample(raw,Math.max(15,len/700));
   setStatus(t('st_elev'));let elev=await fetchElevations(pts);
@@ -621,7 +636,7 @@ async function run(){const btn=document.getElementById('run');btn.disabled=true;
    pax:Math.max(1,+document.getElementById('pax').value||1),cargo:Math.max(0,+document.getElementById('cargo').value||0),
    style:+document.getElementById('style').value,vmax:+document.getElementById('vmax').value,alatRaw:+document.getElementById('alat').value,
    optMode:segVal('optmode','data-o')};
-  const res=simulate(params);res.A=A;res.B=B;window.LAST=res;window.CTX=res.ctx;
+  const res=simulate(params);res.A=A;res.B=B;res.waypoints=stopPts;window.LAST=res;window.CTX=res.ctx;
   hideRating();render(res);
   document.getElementById('navBtn').disabled=false;document.getElementById('demoBtn').disabled=false;
   const warn=[]; if(usedFb)warn.push(t('st_geofail')); if(weatherFail)warn.push(t('st_wxfail'));
@@ -659,7 +674,8 @@ function render(r){
 }
 function drawMarkers(r){markerLayer.clearLayers();
  L.circleMarker([r.A.lat,r.A.lon],{radius:7,color:'#6ee87f',fillColor:'#6ee87f',fillOpacity:1,weight:2}).bindTooltip(r.A.label).addTo(markerLayer);
- L.circleMarker([r.B.lat,r.B.lon],{radius:7,color:'#ff6a52',fillColor:'#ff6a52',fillOpacity:1,weight:2}).bindTooltip(r.B.label).addTo(markerLayer);}
+ L.circleMarker([r.B.lat,r.B.lon],{radius:7,color:'#ff6a52',fillColor:'#ff6a52',fillOpacity:1,weight:2}).bindTooltip(r.B.label).addTo(markerLayer);
+ (r.waypoints||[]).forEach((w,i)=>L.circleMarker([w.lat,w.lon],{radius:6,color:'#f3a14a',fillColor:'#f3a14a',fillOpacity:1,weight:2}).bindTooltip((i+1)+'. '+(w.label||'')).addTo(markerLayer));}
 function colorByConsumption(r){routeLayer.clearLayers();
  for(let i=0;i<r.pts.length-1;i++)L.polyline([[r.pts[i].lat,r.pts[i].lon],[r.pts[i+1].lat,r.pts[i+1].lon]],{color:powColor(r.segPower[i]),weight:5,opacity:.9}).addTo(routeLayer);
  drawMarkers(r);
@@ -1057,6 +1073,19 @@ document.getElementById('viewmode').querySelectorAll('button').forEach(b=>b.addE
 }));
 
 /* ===== init ===== */
+/* waypoints / stops */
+function getStops(){return [...document.querySelectorAll('#stops .stop-input')].map(i=>i.value.trim()).filter(Boolean);}
+function addStop(val){const wrap=document.getElementById('stops');
+ const row=document.createElement('div');row.className='field stoprow';
+ row.style.cssText='display:flex;gap:8px;align-items:flex-end;margin-bottom:10px';
+ row.innerHTML=`<div style="flex:1"><label class="lbl" data-i="l_stop">${t('l_stop')}</label><input class="stop-input" placeholder="${t('ph_stop')}"></div><button class="btn ghost stop-del" style="width:auto;padding:9px 13px;font-size:16px">×</button>`;
+ wrap.appendChild(row);row.querySelector('.stop-input').value=val||'';
+ row.querySelector('.stop-del').addEventListener('click',()=>row.remove());}
+document.getElementById('addStop').addEventListener('click',()=>addStop(''));
+document.getElementById('swapBtn').addEventListener('click',()=>{
+ const s=document.getElementById('start'),d=document.getElementById('dest'),tmp=s.value;s.value=d.value;d.value=tmp;
+ const vals=getStops().reverse();document.getElementById('stops').innerHTML='';vals.forEach(v=>addStop(v));
+ run();});
 document.getElementById('footer').textContent=t('foot');
 document.getElementById('locBtn').addEventListener('click',()=>{
  if(!('geolocation'in navigator)){setStatus(LANG==='sl'?'GPS ni na voljo.':'GPS unavailable.','err');return;}
