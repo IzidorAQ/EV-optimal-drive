@@ -286,8 +286,9 @@ a{color:var(--teal)}
     <div class="navstat"><div class="k" data-i="nav_eta">ETA</div><div class="v" id="navEta">–</div></div>
     <div class="navstat"><div class="k" data-i="nav_elev">Višina</div><div class="v"><span id="navElev">0</span> <small>m</small></div></div>
     <div class="navstat"><div class="k" data-i="nav_grade">Naklon</div><div class="v"><span id="navGrade">0</span> <small>%</small></div></div>
-    <div class="navstat"><div class="k" data-i="nav_soc">SoC</div><div class="v"><span id="navSoc">0</span> <small>%</small></div></div>
-    <div class="navstat"><div class="k" data-i="nav_used">Poraba</div><div class="v"><span id="navUsed">0</span> <small>kWh</small></div></div>
+    <div class="navstat"><div class="k"><span id="navSocLbl" data-i="nav_soc">SoC</span></div><div class="v"><span id="navSoc">0</span> <small>%</small></div></div>
+    <div class="navstat"><div class="k" data-i="nav_used">Poraba</div><div class="v"><span id="navUsed">0</span> <small id="navUsedUnit">kWh</small></div></div>
+    <div class="navstat" id="navGearWrap" style="display:none"><div class="k" data-i="nav_gear">Prestava</div><div class="v" id="navGear" style="font-size:22px;font-weight:700;color:var(--teal)">–</div></div>
   </div>
 </div>
 
@@ -341,6 +342,11 @@ const VEHICLES={
   "001":{m:2350,batt:95.0,cd:0.23,A:2.50,crr:0.0098,pMax:400,pRegen:120,hp:true},
   "X":  {m:2010,batt:64.0,cd:0.29,A:2.55,crr:0.0098,pMax:315,pRegen:100,hp:true},
   "7X": {m:2340,batt:94.0,cd:0.27,A:2.65,crr:0.0098,pMax:475,pRegen:120,hp:true},
+ },
+ "Chevrolet (bencin)":{
+  "Kalos 1.4 sedan (2004)":{type:'ice',m:1030,cd:0.34,A:2.05,crr:0.013,pMax:61,torqueMax:123,
+   gears:[3.818,2.158,1.448,1.024,0.814],finalDrive:4.176,tireR:0.285,
+   idleRpm:850,minRpm:1300,maxRpm:6000,overrunRpm:1300,bsfcMin:265,idleLh:0.8,tankL:45,etaTrans:0.88,off:true},
  }
 };
 const DEFAULT_VEHICLE="BMW i4 M50";
@@ -357,12 +363,12 @@ const I18N={
   l_style:"Slog",l_vmax:"Maks. hitrost",l_comfort:"Ovinki (g)",l_opt:"Optimizacija hitrosti",o_cruise:"Konstantna",o_optimal:"Optimalno",opt_hint:"Optimalno z dinamičnim programiranjem poišče hitrostni profil z najnižjo skupno porabo (jadranje pred ovinki, minimalno zaviranje). Drsnik Slog uravnava razmerje poraba/čas: maks. doseg = najnižja poraba.",btn_run:"Izračunaj optimalno vožnjo",btn_nav:"▶ Navigacija (GPS)",btn_demo:"Demo vožnja (brez GPS)",
   hd_route:"Trasa · barva = poraba",lg_regen:"regen",lg_low:"nizka",lg_high:"visoka",
   ch_terrain:"Teren in hitrost",ch_elev:"višina",ch_speed:"hitrost",ch_power:"Moč na bateriji in SoC",ch_cons:"poraba",ch_regen:"regen",
-  data_note:"Trasa: OSRM · Višine in vreme: Open-Meteo · Geokodiranje: Nominatim (OpenStreetMap). Podatki za i4 M50 so uradni (BMW); ostala vozila so modelirane ocene. GPS navigacija deluje le prek HTTPS in ob dovoljenju za lokacijo; sicer uporabi Demo vožnjo.",
+  data_note:"Trasa: OSRM · Višine in vreme: Open-Meteo · Geokodiranje: Nominatim (OpenStreetMap). Osnovni podatki vozil so uradni (npr. i4 M50, MG ZS EV, Ioniq, Kalos: moč, navor, masa, NEDC); prestavna razmerja in poraba goriva pri Kalosu so fizikalno modelirani (tovarniška poraba goriva ni javna). GPS navigacija deluje le prek HTTPS in ob dovoljenju za lokacijo; sicer uporabi Demo vožnjo.",
   k_dist:"Razdalja",k_time:"Čas vožnje",k_energy:"Poraba",k_cons:"Povprečje",k_soc:"SoC ob prihodu",k_regen:"Regeneracija",k_avgspeed:"Povp. hitrost",k_climb:"Vzpon / spust",
   st_geo:"Geokodiranje naslovov…",st_weather:"Pridobivam vreme…",st_route:"Računam traso (OSRM)…",st_elev:"Pridobivam višine…",st_calc:"Optimiziram hitrostni profil…",st_done:"Izračun končan.",
   st_geofail:"Geokodiranje ni uspelo, uporabljam privzete koordinate Krasa.",st_wx:"Vreme: ",st_wxfail:"Vremena ni bilo mogoče pridobiti, uporabi ročne vrednosti.",st_elevfail:"Višin ni bilo mogoče pridobiti (raven teren); poskusi znova čez nekaj minut.",st_err:"Napaka: ",
   hd_rating:"Ocena vožnje",btn_closerating:"Nazaj na porabo",ch_optact:"Optimalno vs dejansko",lg_opt:"optimalno",lg_act:"dejansko",
-  nav_opt:"optimalno",nav_remain:"Do cilja",nav_eta:"ETA",nav_soc:"SoC",nav_used:"Poraba",btn_end:"Končaj",nav_3d:"3D",nav_demospeed:"Hitrost predvajanja",nav_elev:"Višina",nav_grade:"Naklon",three_hint:"Vleci za vrtenje, kolešček za približanje. Višina je poudarjena za boljšo vidnost.",
+  nav_opt:"optimalno",nav_remain:"Do cilja",nav_eta:"ETA",nav_soc:"SoC",nav_used:"Poraba",nav_gear:"Prestava",btn_end:"Končaj",nav_3d:"3D",nav_demospeed:"Hitrost predvajanja",nav_elev:"Višina",nav_grade:"Naklon",three_hint:"Vleci za vrtenje, kolešček za približanje. Višina je poudarjena za boljšo vidnost.",
   dir_hold:"OHRANI HITROST",dir_slow:"SPROSTI PLIN",dir_fast:"LAHKO HITREJE",
   rt_excellent:"Odlično",rt_good:"Dobro",rt_ok:"Solidno",rt_poor:"Lahko bolje",
   bar_ok:"v območju",bar_fast:"prehitro",bar_slow:"prepočasno",extra:"poraba +",saved:"prihranek",
@@ -378,12 +384,12 @@ const I18N={
   l_style:"Style",l_vmax:"Max speed",l_comfort:"Corners (g)",l_opt:"Speed optimization",o_cruise:"Constant",o_optimal:"Optimal",opt_hint:"Optimal uses dynamic programming to find the lowest total-energy speed profile (coasting into corners, minimal braking). The Style slider sets the energy/time trade-off: max range = lowest consumption.",btn_run:"Compute optimal drive",btn_nav:"▶ Navigation (GPS)",btn_demo:"Demo drive (no GPS)",
   hd_route:"Route · color = consumption",lg_regen:"regen",lg_low:"low",lg_high:"high",
   ch_terrain:"Terrain and speed",ch_elev:"elevation",ch_speed:"speed",ch_power:"Battery power and SoC",ch_cons:"consumption",ch_regen:"regen",
-  data_note:"Route: OSRM · Elevation and weather: Open-Meteo · Geocoding: Nominatim (OpenStreetMap). i4 M50 figures are official (BMW); other vehicles are modeled estimates. GPS navigation needs HTTPS and location permission; otherwise use Demo drive.",
+  data_note:"Route: OSRM · Elevation and weather: Open-Meteo · Geocoding: Nominatim (OpenStreetMap). Vehicle base specs are official (e.g. i4 M50, MG ZS EV, Ioniq, Kalos: power, torque, mass, NEDC); the Kalos gear ratios and fuel use are physically modeled (factory fuel map is not public). GPS navigation needs HTTPS and location permission; otherwise use Demo drive.",
   k_dist:"Distance",k_time:"Drive time",k_energy:"Energy used",k_cons:"Average",k_soc:"Arrival SoC",k_regen:"Regenerated",k_avgspeed:"Avg speed",k_climb:"Climb / descent",
   st_geo:"Geocoding…",st_weather:"Fetching weather…",st_route:"Routing (OSRM)…",st_elev:"Fetching elevation…",st_calc:"Optimizing speed profile…",st_done:"Done.",
   st_geofail:"Geocoding failed, using default Karst coordinates.",st_wx:"Weather: ",st_wxfail:"Could not fetch weather, use manual values.",st_elevfail:"Could not fetch elevation (flat terrain); try again in a few minutes.",st_err:"Error: ",
   hd_rating:"Drive rating",btn_closerating:"Back to consumption",ch_optact:"Optimal vs actual",lg_opt:"optimal",lg_act:"actual",
-  nav_opt:"optimal",nav_remain:"To dest.",nav_eta:"ETA",nav_soc:"SoC",nav_used:"Energy",btn_end:"End",nav_3d:"3D",nav_demospeed:"Playback speed",nav_elev:"Elevation",nav_grade:"Grade",three_hint:"Drag to rotate, wheel to zoom. Elevation is exaggerated for visibility.",
+  nav_opt:"optimal",nav_remain:"To dest.",nav_eta:"ETA",nav_soc:"SoC",nav_used:"Energy",nav_gear:"Gear",btn_end:"End",nav_3d:"3D",nav_demospeed:"Playback speed",nav_elev:"Elevation",nav_grade:"Grade",three_hint:"Drag to rotate, wheel to zoom. Elevation is exaggerated for visibility.",
   dir_hold:"HOLD SPEED",dir_slow:"EASE OFF",dir_fast:"CAN GO FASTER",
   rt_excellent:"Excellent",rt_good:"Good",rt_ok:"Solid",rt_poor:"Room to improve",
   bar_ok:"in range",bar_fast:"too fast",bar_slow:"too slow",extra:"energy +",saved:"saved",
@@ -410,8 +416,11 @@ function setLang(l){LANG=l;
 function getVehicle(){const v=document.getElementById('vehicle').value;
  for(const b in VEHICLES)for(const m in VEHICLES[b])if(b+" "+m===v)return{name:v,...VEHICLES[b][m]};
  return{name:DEFAULT_VEHICLE,...VEHICLES["BMW"]["i4 M50"]};}
-function showVehInfo(){const v=getVehicle();
- document.getElementById('vehInfo').textContent=`${v.batt} kWh · ${v.m} kg · Cd ${v.cd} · A ${v.A} m² · regen ${v.pRegen} kW`+(v.hp?" · HP":"")+(v.off?" · "+(LANG==='sl'?"uradni":"official"):"");}
+function showVehInfo(){const v=getVehicle();const sl=LANG==='sl';
+ const txt=v.type==='ice'
+  ? `${v.pMax} kW · ${v.torqueMax} Nm · ${v.m} kg · Cd ${v.cd} · A ${v.A} m² · 5-stop. ročni · ${sl?'bencin':'petrol'}`+(v.off?" · "+(sl?"uradni":"official"):"")
+  : `${v.batt} kWh · ${v.m} kg · Cd ${v.cd} · A ${v.A} m² · regen ${v.pRegen} kW`+(v.hp?" · HP":"")+(v.off?" · "+(sl?"uradni":"official"):"");
+ document.getElementById('vehInfo').textContent=txt;}
 
 /* ===== sliders ===== */
 function bind(id,fmt){const el=document.getElementById(id),out=document.getElementById(id+'V');const u=()=>out.textContent=fmt(+el.value);el.addEventListener('input',u);u();}
@@ -543,9 +552,13 @@ function buildContext(p){
  const vCorner=new Array(N).fill(vmax);
  for(let i=1;i<N-1;i++)vCorner[i]=Math.min(vmax,Math.sqrt(aLat*curveRadius(p.pts[i-1],p.pts[i],p.pts[i+1],latRef)));
  const vlim=new Array(N);for(let i=0;i<N;i++){const base=p.optMode==='cruise'?targetCruise:vmax;vlim[i]=Math.min(base,vmax,vCorner[i]);}
- const lambda=(p.style/100)*24000; // time weight (W) for the optimal mode
+ const lambda=(p.style/100)*24000*(veh.type==='ice'?3.5:1); // time weight (W) for the optimal mode
+ const ice=veh.type==='ice'?{gears:veh.gears,finalDrive:veh.finalDrive,tireR:veh.tireR,idleRpm:veh.idleRpm,
+   minRpm:veh.minRpm,maxRpm:veh.maxRpm,overrunRpm:veh.overrunRpm,bsfcMin:veh.bsfcMin,
+   idleGps:veh.idleLh*745/3600,fuelDensity:745,torqueMax:veh.torqueMax,etaTrans:veh.etaTrans,tankL:veh.tankL,accessoryKW:0.3}:null;
  return{veh,N,m,rho,crr,Paux,aAccel,aDecel,ds,grade,head,distKm,totalLen,latRef,vmax,eco,targetCruise,vCorner,vlim,lambda,optMode:p.optMode,
-   pRegenMax:veh.pRegen*1000,battCapJ:veh.batt*3.6e6,soc:p.soc,windFrom:p.windDir,windMs:p.wind/3.6,elev:p.elev,pts:p.pts,weather:p.weather};
+   isICE:!!ice,ice,
+   pRegenMax:(veh.pRegen||0)*1000,battCapJ:(veh.batt||0)*3.6e6,soc:p.soc,windFrom:p.windDir,windMs:p.wind/3.6,elev:p.elev,pts:p.pts,weather:p.weather};
 }
 /* shared per-segment battery energy (work-energy method, regen + power limit) */
 function segEnergy(ctx,i,v1,v2){
@@ -555,10 +568,35 @@ function segEnergy(ctx,i,v1,v2){
  const vr1=v1+wc,vr2=v2+wc;
  const dKE=0.5*ctx.m*(v2*v2-v1*v1),dPE=ctx.m*G*dh,Eroll=ctx.crr*ctx.m*G*cosT*ds;
  const Eaero=0.5*ctx.rho*ctx.veh.cd*ctx.veh.A*((vr1*Math.abs(vr1))+(vr2*Math.abs(vr2)))/2*ds;
- const Ewheel=dKE+dPE+Eroll+Eaero;let Ebatt,regenMech=0,feasible=true;
+ const Ewheel=dKE+dPE+Eroll+Eaero;const pw=Ewheel/dt;
+ if(ctx.isICE){const r=iceFuel(ctx,va,pw,dt);return{Ebatt:r.fuelJ,dt,regenMech:0,feasible:r.feasible,gear:r.gear,fuelL:r.fuelL,pw};}
+ let Ebatt,regenMech=0,feasible=true;
  if(Ewheel>=0){if(Ewheel/dt>ctx.veh.pMax*1000)feasible=false;Ebatt=Ewheel/0.88+ctx.Paux*dt;}
  else{const mech=-Ewheel;regenMech=Math.min(mech,ctx.pRegenMax*dt);Ebatt=ctx.Paux*dt-regenMech*0.70;}
- return{Ebatt,dt,regenMech,feasible};}
+ return{Ebatt,dt,regenMech,feasible,pw};}
+/* ICE fuel + optimal gear for one segment (work-energy wheel power -> engine -> BSFC) */
+function iceFuel(ctx,v,Pw,dt){const ice=ctx.ice;
+ const rpmOf=g=>v*(ice.finalDrive*ice.gears[g])/(2*Math.PI*ice.tireR)*60;
+ if(Pw>5){ // propelling
+  const PengKW=(Pw/ice.etaTrans)/1000+ice.accessoryKW;let best=null,fb=null;
+  for(let g=0;g<ice.gears.length;g++){const rpm=rpmOf(g);if(rpm<ice.minRpm||rpm>ice.maxRpm)continue;
+   const Pavail=Math.min(ctx.veh.pMax,ice.torqueMax*2*Math.PI*rpm/60/1000);
+   if(!fb||Pavail>fb.Pavail)fb={Pavail,rpm,gear:g+1};
+   if(PengKW>Pavail+0.1)continue;
+   const load=Math.min(1,PengKW/Pavail);
+   const bsfc=ice.bsfcMin*(1+1.0*(1-load))*(1+Math.pow((rpm-2600)/2600,2)*0.5);
+   const fuelG=Math.max(bsfc*PengKW/3600,ice.idleGps)*dt;
+   if(!best||fuelG<best.fuelG)best={fuelG,gear:g+1};}
+  if(best){const fuelL=best.fuelG/ice.fuelDensity;return{fuelJ:best.fuelG*43000,fuelL,gear:best.gear,feasible:true};}
+  if(!fb){const rpm=Math.max(ice.idleRpm,rpmOf(0));fb={Pavail:Math.min(ctx.veh.pMax,ice.torqueMax*2*Math.PI*rpm/60/1000),rpm,gear:1};}
+  const bsfc=ice.bsfcMin*(1+Math.pow((fb.rpm-2600)/2600,2)*0.5);
+  const fuelG=Math.max(bsfc*fb.Pavail/3600,ice.idleGps)*dt,fuelL=fuelG/ice.fuelDensity; // engine flat out, but cannot meet demand
+  return{fuelJ:fuelG*43000,fuelL,gear:fb.gear,feasible:false};
+ }
+ // coasting / braking / idle: engine braking with fuel cut where possible
+ let gear=0;for(let g=ice.gears.length-1;g>=0;g--){const rpm=rpmOf(g);if(rpm>=ice.overrunRpm&&rpm<=ice.maxRpm){gear=g+1;break;}}
+ let gps;if(gear>0){gps=0;}else{gps=ice.idleGps;gear=(v<1.2?0:1);}
+ const fuelG=gps*dt,fuelL=fuelG/ice.fuelDensity;return{fuelJ:fuelG*43000,fuelL,gear,feasible:true};}
 /* exact minimum-energy speed profile via dynamic programming over (position, speed) */
 function dpOptimal(ctx){
  const N=ctx.N,dV=0.5,V=ctx.vmax,L=Math.floor(V/dV)+1,INF=1e18,lam=ctx.lambda;
@@ -587,6 +625,16 @@ function optimalProfile(ctx){const N=ctx.N,vb=new Array(N);vb[N-1]=0;
  const v=new Array(N);v[0]=0;for(let i=1;i<N;i++)v[i]=Math.min(vb[i],Math.sqrt(v[i-1]*v[i-1]+2*ctx.aAccel*ctx.ds[i-1]));return v;}
 function energyProfile(ctx,v,from,to){from=from||0;to=(to==null?ctx.N-1:to);const N=ctx.N;
  const segPower=new Array(N-1).fill(0),powKW=new Array(N-1).fill(0),socArr=new Array(N).fill(null),spdKmh=new Array(N).fill(0),cumTime=new Array(N).fill(0),cumWh=new Array(N).fill(0);
+ if(ctx.isICE){const tankL=ctx.ice.tankL,gears=new Array(N-1).fill(0);let fuelL=0,time=0,climb=0,descent=0;
+  socArr[from]=ctx.soc;spdKmh[from]=v[from]*3.6;
+  for(let i=from;i<to;i++){const v1=v[i],v2=v[i+1],dz=ctx.elev[i+1]-ctx.elev[i];if(dz>0)climb+=dz;else descent-=dz;
+   const se=segEnergy(ctx,i,v1,v2),dt=se?se.dt:(ctx.ds[i]/0.3);
+   fuelL+=se?se.fuelL:0;gears[i]=se?se.gear:0;time+=dt;
+   const pk=se?se.pw/1000:0;segPower[i]=powKW[i]=pk;cumTime[i+1]=time;cumWh[i+1]=fuelL;
+   socArr[i+1]=Math.max(0,ctx.soc-fuelL/tankL*100);spdKmh[i+1]=v2*3.6;}
+  const coveredKm=ctx.distKm[to]-ctx.distKm[from];
+  return{isICE:true,fuelL,lkm:coveredKm>0?fuelL/coveredKm*100:0,gears,time,segPower,powKW,socArr,spdKmh,cumTime,cumWh,climb,descent,
+   battJ:0,Wh:0,regenJ:0,regenKwh:0,fuelEnd:Math.max(0,ctx.soc-fuelL/tankL*100)};}
  let battJ=0,regenJ=0,time=0,climb=0,descent=0,socJ=ctx.soc/100*ctx.battCapJ;
  socArr[from]=socJ/ctx.battCapJ*100;spdKmh[from]=v[from]*3.6;
  for(let i=from;i<to;i++){const v1=v[i],v2=v[i+1],dz=ctx.elev[i+1]-ctx.elev[i];if(dz>0)climb+=dz;else descent-=dz;
@@ -597,7 +645,12 @@ function energyProfile(ctx,v,from,to){from=from||0;to=(to==null?ctx.N-1:to);cons
  return{battJ,Wh:battJ/3600,regenJ,regenKwh:regenJ/3.6e6,time,segPower,powKW,socArr,spdKmh,cumTime,cumWh,climb,descent};}
 
 function simulate(p){const ctx=buildContext(p);const v=(p.optMode==='optimal')?dpOptimal(ctx):optimalProfile(ctx);const ep=energyProfile(ctx,v);
- const km=ctx.totalLen/1000,grossWh=ep.Wh+ep.regenKwh*1000;
+ const km=ctx.totalLen/1000;
+ if(ctx.isICE)return{ctx,vOptMs:v,pts:ctx.pts,elev:ctx.elev,ds:ctx.ds,distKm:ctx.distKm,isICE:true,gears:ep.gears,tankL:ctx.ice.tankL,
+  segPower:ep.segPower,powKW:ep.powKW,socArr:ep.socArr,spdKmh:ep.spdKmh,cumTime:ep.cumTime,cumWh:ep.cumWh,
+  km,fuelL:ep.fuelL,lkm:ep.lkm,time:ep.time,fuelEnd:ep.fuelEnd,socStart:p.soc,socEnd:ep.fuelEnd,
+  Wh:0,whkm:0,regenKwh:0,regenPct:0,eco:ctx.eco*3.6,climb:ep.climb,descent:ep.descent,avgSpeed:km/(ep.time/3600)};
+ const grossWh=ep.Wh+ep.regenKwh*1000;
  return{ctx,vOptMs:v,pts:ctx.pts,elev:ctx.elev,ds:ctx.ds,distKm:ctx.distKm,
   segPower:ep.segPower,powKW:ep.powKW,socArr:ep.socArr,spdKmh:ep.spdKmh,cumTime:ep.cumTime,cumWh:ep.cumWh,
   km,Wh:ep.Wh,whkm:ep.Wh/km,time:ep.time,regenKwh:ep.regenKwh,regenPct:grossWh>0?(ep.regenKwh*1000)/grossWh*100:0,
@@ -655,7 +708,16 @@ function lerpC(a,b,f){return `rgb(${Math.round(a[0]+(b[0]-a[0])*f)},${Math.round
 function render(r){
  const fmtT=s=>{const m=Math.round(s/60);return m>=60?`${Math.floor(m/60)}h ${m%60}min`:`${m} min`;};
  const sl=LANG==='sl';
- const kpis=[
+ const kpis=r.isICE?[
+  {k:t('k_dist'),v:r.km.toFixed(1),u:'km'},
+  {k:t('k_time'),v:fmtT(r.time),u:''},
+  {k:(sl?'Poraba':'Fuel use'),v:r.lkm.toFixed(1),u:'L/100km',c:'warn'},
+  {k:(sl?'Gorivo skupaj':'Total fuel'),v:r.fuelL.toFixed(2),u:'L',c:'warn'},
+  {k:(sl?'Gorivo ob prihodu':'Fuel at arrival'),v:r.fuelEnd.toFixed(0),u:'%',c:r.fuelEnd<15?'warn':'',sub:`${r.socStart}% → ${r.fuelEnd.toFixed(0)}% (${r.tankL} L)`},
+  {k:t('k_avgspeed'),v:r.avgSpeed.toFixed(0),u:'km/h'},
+  {k:t('k_climb'),v:`${Math.round(r.climb)}`,u:'m',sub:`↓ ${Math.round(r.descent)} m`},
+  {k:(sl?'CO₂ (pribl.)':'CO₂ (approx.)'),v:Math.round(r.fuelL*2392/r.km),u:'g/km',sub:`${(r.fuelL*2.392).toFixed(1)} kg ${sl?'skupaj':'total'}`},
+ ]:[
   {k:t('k_dist'),v:r.km.toFixed(1),u:'km'},
   {k:t('k_time'),v:fmtT(r.time),u:''},
   {k:t('k_energy'),v:(r.Wh/1000).toFixed(2),u:'kWh',c:'warn'},
@@ -837,11 +899,18 @@ function stepNav(idx,vActKmh){const r=NAV.r,opt=r.spdKmh[idx];
    if(dd>=40&&dd<=250){const key=Math.round(minOpt)+'@'+Math.round(minAt/4);
     if(key!==Voice.lastCornerKey){const dm=Math.round(dd/10)*10;
      vEnqueue('corner',Math.round(minOpt)+(LANG==='sl'?(' čez '+dm+' metrov'):(' in '+dm+' meters')));Voice.lastCornerKey=key;}}}
+  if(r.isICE){const ggi=Math.min(idx,r.gears.length-1),g=r.gears[ggi];
+   if(g>0&&g!==Voice.lastGear){vEnqueue('gear',(LANG==='sl'?'prestava ':'gear ')+g);Voice.lastGear=g;}}
  }
  const remKm=Math.max(0,r.km-r.distKm[idx]);document.getElementById('navRemain').textContent=remKm.toFixed(1);
  const etaS=Math.max(0,r.time-r.cumTime[idx]);document.getElementById('navEta').textContent=`${Math.floor(etaS/60)}:${String(Math.round(etaS%60)).padStart(2,'0')}`;
  document.getElementById('navSoc').textContent=r.socArr[idx].toFixed(0);
- document.getElementById('navUsed').textContent=(r.cumWh[idx]/1000).toFixed(2);
+ const slN=LANG==='sl';
+ document.getElementById('navUsed').textContent=r.isICE?r.cumWh[idx].toFixed(2):(r.cumWh[idx]/1000).toFixed(2);
+ document.getElementById('navUsedUnit').textContent=r.isICE?'L':'kWh';
+ document.getElementById('navSocLbl').textContent=r.isICE?(slN?'Gorivo':'Fuel'):'SoC';
+ document.getElementById('navGearWrap').style.display=r.isICE?'':'none';
+ if(r.isICE){const ggi=Math.min(idx,r.gears.length-1),g=r.gears[ggi];document.getElementById('navGear').textContent=g>0?g:'N';}
  document.getElementById('navElev').textContent=Math.round(r.elev[idx]);
  const gi=Math.min(idx,r.ds.length-1),gpct=(r.elev[Math.min(idx+1,r.elev.length-1)]-r.elev[idx])/r.ds[gi]*100;
  const gp=Math.max(-30,Math.min(30,gpct));document.getElementById('navGrade').textContent=(gp>=0?'+':'')+gp.toFixed(1);
@@ -896,7 +965,9 @@ function finishNav(){if(!NAV)return;
  for(let i=0;i<=maxIdx;i++)if(vAct[i]==null)vAct[i]=r.vOptMs[i];
  // energy compare
  const epAct=energyProfile(ctx,vAct,0,maxIdx),epOpt=energyProfile(ctx,r.vOptMs,0,maxIdx);
- const extraPct=epOpt.Wh>0?(epAct.Wh-epOpt.Wh)/epOpt.Wh*100:0;
+ const isICE=!!r.isICE;
+ const aMain=isICE?epAct.fuelL:epAct.Wh,oMain=isICE?epOpt.fuelL:epOpt.Wh;
+ const extraPct=oMain>0?(aMain-oMain)/oMain*100:0;
  // deviations weighted by distance
  let okD=0,fastD=0,slowD=0,sumAbs=0,sumD=0,tot=0;const cls=new Array(maxIdx).fill(0);
  for(let i=0;i<maxIdx;i++){const d=ctx.ds[i],va=vAct[i]*3.6,vo=r.spdKmh[i],dev=va-vo;
@@ -909,6 +980,7 @@ function finishNav(){if(!NAV)return;
  let maxSpeed=0;for(let i=0;i<=maxIdx;i++)maxSpeed=Math.max(maxSpeed,vAct[i]*3.6);
  navEl.classList.remove('show');
  showRating(r,{score,extraPct,okPct:okD/tot*100,fastPct:fastD/tot*100,slowPct:slowD/tot*100,cls,vAct,maxIdx,
+  isICE,actFuel:epAct.fuelL,optFuel:epOpt.fuelL,lkm:coveredKm>0?epAct.fuelL/coveredKm*100:0,
   actWh:epAct.Wh,optWh:epOpt.Wh,km:coveredKm,time:epAct.time,avgSpeed,maxSpeed,
   regenKwh:epAct.regenKwh,climb:epAct.climb,descent:epAct.descent,whkm:coveredKm>0?epAct.Wh/coveredKm:0,optTime:epOpt.time});
  NAV=null;
@@ -923,14 +995,25 @@ function showRating(r,R){
  document.getElementById('scoreVal').style.color=col;
  document.getElementById('scoreLbl').textContent=R.score>=85?t('rt_excellent'):R.score>=70?t('rt_good'):R.score>=50?t('rt_ok'):t('rt_poor');
  const bar=(lbl,pct,c)=>`<div class="bar"><span style="min-width:78px">${lbl}</span><div class="track"><div class="fill" style="width:${pct.toFixed(0)}%;background:${c}"></div></div><span style="min-width:38px;text-align:right">${pct.toFixed(0)}%</span></div>`;
+ const compUnit=R.isICE?'L':'kWh',compAct=R.isICE?R.actFuel:R.actWh/1000,compOpt=R.isICE?R.optFuel:R.optWh/1000;
  const energyLine=R.extraPct>=0
-   ? `<div class="bar"><span style="min-width:78px">${t('extra')}</span><span style="color:#ff6a52;font-weight:700">+${R.extraPct.toFixed(1)}%</span><span style="color:var(--muted2)">(${(R.actWh/1000).toFixed(2)} vs ${(R.optWh/1000).toFixed(2)} kWh)</span></div>`
+   ? `<div class="bar"><span style="min-width:78px">${t('extra')}</span><span style="color:#ff6a52;font-weight:700">+${R.extraPct.toFixed(1)}%</span><span style="color:var(--muted2)">(${compAct.toFixed(2)} vs ${compOpt.toFixed(2)} ${compUnit})</span></div>`
    : `<div class="bar"><span style="min-width:78px">${t('saved')}</span><span style="color:#6ee87f;font-weight:700">${R.extraPct.toFixed(1)}%</span></div>`;
  document.getElementById('ratingBars').innerHTML=
    bar(t('bar_ok'),R.okPct,'#6ee87f')+bar(t('bar_fast'),R.fastPct,'#ff6a52')+bar(t('bar_slow'),R.slowPct,'#4aa8ff')+energyLine;
  // detailed stats grid
  const fmtT=s=>{const m=Math.round(s/60);return m>=60?`${Math.floor(m/60)}h ${m%60}min`:`${m} min`;};
- const stats=[
+ const stats=R.isICE?[
+  {k:t('k_dist'),v:R.km.toFixed(1),u:'km'},
+  {k:t('k_time'),v:fmtT(R.time),u:''},
+  {k:t('k_avgspeed'),v:Math.round(R.avgSpeed),u:'km/h'},
+  {k:(sl?'Najvišja':'Top speed'),v:Math.round(R.maxSpeed),u:'km/h'},
+  {k:(sl?'Poraba':'Fuel use'),v:R.lkm.toFixed(1),u:'L/100km',c:'warn'},
+  {k:(sl?'Gorivo skupaj':'Total fuel'),v:R.actFuel.toFixed(2),u:'L',c:'warn'},
+  {k:(sl?'CO₂ (pribl.)':'CO₂ (approx.)'),v:(R.actFuel*2.392).toFixed(1),u:'kg'},
+  {k:t('k_climb'),v:Math.round(R.climb),u:'m',sub:`↓ ${Math.round(R.descent)} m`},
+  {k:(sl?'Δ čas vs opt.':'Δ time vs opt.'),v:((R.time-R.optTime)>=0?'+':'')+Math.round((R.time-R.optTime)/60*10)/10,u:'min'},
+ ]:[
   {k:t('k_dist'),v:R.km.toFixed(1),u:'km'},
   {k:t('k_time'),v:fmtT(R.time),u:''},
   {k:t('k_avgspeed'),v:Math.round(R.avgSpeed),u:'km/h'},
