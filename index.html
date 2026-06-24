@@ -474,15 +474,18 @@ function resample(pts,step){const out=[pts[0]];let acc=0;
  out.push(pts[pts.length-1]);return out;}
 async function elevGet(url){const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}
 async function elevBatch(coords){let lastErr='';
- // 1) Open-Meteo (one retry for transient rate limits)
- for(let attempt=0;attempt<2;attempt++){
+ // 1) Open-Meteo (retries with backoff for rate limits / 429)
+ const backoff=[0,2500,6000];
+ for(let attempt=0;attempt<3;attempt++){
+  if(backoff[attempt])await new Promise(r=>setTimeout(r,backoff[attempt]));
   try{const out=new Array(coords.length).fill(null);
    for(let i=0;i<coords.length;i+=100){const ch=coords.slice(i,i+100);
     const lat=ch.map(p=>p.lat.toFixed(6)).join(','),lon=ch.map(p=>p.lon.toFixed(6)).join(',');
     const j=await elevGet(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);
-    if(!j||!j.elevation)throw new Error('no data');j.elevation.forEach((e,k)=>out[i+k]=e);}
+    if(!j||!j.elevation)throw new Error('no data');j.elevation.forEach((e,k)=>out[i+k]=e);
+    if(i+100<coords.length)await new Promise(r=>setTimeout(r,400));}
    if(out.some(v=>v!=null)){window.__elevSrc='Open-Meteo';return out;}throw new Error('empty');
-  }catch(e){lastErr='Open-Meteo: '+e.message;if(attempt===0)await new Promise(r=>setTimeout(r,1500));}}
+  }catch(e){lastErr='Open-Meteo: '+e.message;}}
  // 2) OpenTopoData EU-DEM 25 m
  try{const out=new Array(coords.length).fill(null);
   for(let i=0;i<coords.length;i+=100){const ch=coords.slice(i,i+100);
@@ -505,8 +508,11 @@ async function fetchElevations(pts){const N=pts.length;
  // cumulative distance of route points
  const fineCum=new Array(N);fineCum[0]=0;for(let i=1;i<N;i++)fineCum[i]=fineCum[i-1]+hav(pts[i-1],pts[i]);
  const total=fineCum[N-1];
- // sample elevation at ~85 m (matches Open-Meteo Copernicus 90 m DEM) to avoid oversampling noise
- const step=85,M=Math.max(2,Math.ceil(total/step)+1),coarsePts=[],coarseCum=[];let seg=0;
+ // sample elevation at ~85 m; high cap so typical routes (incl. 50 km) keep full resolution.
+ // a short delay between requests (below) prevents the burst that triggers 429.
+ let step=85,M=Math.max(2,Math.ceil(total/step)+1);
+ if(M>800){M=800;step=total/(M-1);}
+ const coarsePts=[],coarseCum=[];let seg=0;
  for(let k=0;k<M;k++){const d=Math.min(total,k*step);
   while(seg<N-2&&fineCum[seg+1]<d)seg++;
   const f=(d-fineCum[seg])/Math.max(1e-6,fineCum[seg+1]-fineCum[seg]);
@@ -553,10 +559,11 @@ function buildContext(p){
  for(let i=1;i<N-1;i++)vCorner[i]=Math.min(vmax,Math.sqrt(aLat*curveRadius(p.pts[i-1],p.pts[i],p.pts[i+1],latRef)));
  const vlim=new Array(N);for(let i=0;i<N;i++){const base=p.optMode==='cruise'?targetCruise:vmax;vlim[i]=Math.min(base,vmax,vCorner[i]);}
  const lambda=(p.style/100)*24000*(veh.type==='ice'?3.5:1); // time weight (W) for the optimal mode
+ const iceSmooth=veh.type==='ice'?4000:0; // mild penalty; the ICE speed profile is also low-pass smoothed in simulate()
  const ice=veh.type==='ice'?{gears:veh.gears,finalDrive:veh.finalDrive,tireR:veh.tireR,idleRpm:veh.idleRpm,
    minRpm:veh.minRpm,maxRpm:veh.maxRpm,overrunRpm:veh.overrunRpm,bsfcMin:veh.bsfcMin,
    idleGps:veh.idleLh*745/3600,fuelDensity:745,torqueMax:veh.torqueMax,etaTrans:veh.etaTrans,tankL:veh.tankL,accessoryKW:0.3}:null;
- return{veh,N,m,rho,crr,Paux,aAccel,aDecel,ds,grade,head,distKm,totalLen,latRef,vmax,eco,targetCruise,vCorner,vlim,lambda,optMode:p.optMode,
+ return{veh,N,m,rho,crr,Paux,aAccel,aDecel,ds,grade,head,distKm,totalLen,latRef,vmax,eco,targetCruise,vCorner,vlim,lambda,iceSmooth,optMode:p.optMode,
    isICE:!!ice,ice,
    pRegenMax:(veh.pRegen||0)*1000,battCapJ:(veh.batt||0)*3.6e6,soc:p.soc,windFrom:p.windDir,windMs:p.wind/3.6,elev:p.elev,pts:p.pts,weather:p.weather};
 }
@@ -598,6 +605,27 @@ function iceFuel(ctx,v,Pw,dt){const ice=ctx.ice;
  let gps;if(gear>0){gps=0;}else{gps=ice.idleGps;gear=(v<1.2?0:1);}
  const fuelG=gps*dt,fuelL=fuelG/ice.fuelDensity;return{fuelJ:fuelG*43000,fuelL,gear,feasible:true};}
 /* exact minimum-energy speed profile via dynamic programming over (position, speed) */
+function adviseGears(ctx,v){const ice=ctx.ice,N=ctx.N,out=new Array(N-1).fill(0);let held=0;
+ const rpmOf=(k,vv)=>vv*(ice.finalDrive*ice.gears[k])/(2*Math.PI*ice.tireR)*60;
+ for(let i=0;i<N-1;i++){const va=(v[i]+v[i+1])/2;const se=segEnergy(ctx,i,v[i],v[i+1]);const pw=se?se.pw:0;
+  if(va<1.4){out[i]=0;held=0;continue;}                       // standstill -> neutral
+  if(pw<=5){                                                  // coasting / engine braking
+   let g=0;for(let k=ice.gears.length-1;k>=0;k--){const r=rpmOf(k,va);if(r>=ice.overrunRpm&&r<=ice.maxRpm){g=k+1;break;}}
+   if(held>0){const rh=rpmOf(held-1,va);if(rh>=ice.overrunRpm&&rh<=ice.maxRpm)g=held;} // keep current if still ok
+   out[i]=g||1;held=out[i];continue;}
+  const PengKW=(pw/ice.etaTrans)/1000+ice.accessoryKW;       // propelling: pick eco gear with hysteresis
+  let best=null,heldFuel=Infinity,heldOk=false;
+  for(let k=0;k<ice.gears.length;k++){const rpm=rpmOf(k,va);if(rpm<ice.minRpm||rpm>ice.maxRpm)continue;
+   const Pavail=Math.min(ctx.veh.pMax,ice.torqueMax*2*Math.PI*rpm/60/1000);if(PengKW>Pavail+0.1)continue;
+   const load=Math.min(1,PengKW/Pavail);const bsfc=ice.bsfcMin*(1+1.0*(1-load))*(1+Math.pow((rpm-2600)/2600,2)*0.5);
+   const fg=bsfc*PengKW/3600;if(!best||fg<best.fg)best={fg,g:k+1};
+   if(k+1===held){heldOk=true;heldFuel=fg;}}
+  if(!best){out[i]=held||1;held=out[i];continue;}
+  out[i]=(heldOk&&heldFuel<=best.fg*1.12)?held:best.g;       // hold current gear unless clearly worse
+  held=out[i];}
+ // remove any residual single-segment blips (median-3 that keeps feasibility)
+ for(let i=1;i<out.length-1;i++)if(out[i]!==out[i-1]&&out[i-1]===out[i+1]&&out[i-1]>0)out[i]=out[i-1];
+ return out;}
 function dpOptimal(ctx){
  const N=ctx.N,dV=0.5,V=ctx.vmax,L=Math.floor(V/dV)+1,INF=1e18,lam=ctx.lambda;
  const aAccCap=ctx.weather==='snow'?0.9:ctx.weather==='rain'?1.7:2.6;
@@ -610,10 +638,10 @@ function dpOptimal(ctx){
    const v2hi=Math.min(Ln*dV,Math.sqrt(v1*v1+2*aAccCap*ds));
    const v2lo=Math.sqrt(Math.max(0,v1*v1-2*aBrCap*ds));
    let ka=Math.ceil(v2lo/dV-1e-9),kb=Math.floor(v2hi/dV+1e-9);if(ka<0)ka=0;if(kb>Ln)kb=Ln;
-   let best=INF,bk=-1;
-   for(let k2=ka;k2<=kb;k2++){const va=(v1+k2*dV)/2;if(va<=0.05)continue;
-    const se=segEnergy(ctx,i,v1,k2*dV);if(!se||!se.feasible)continue;
-    const c=se.Ebatt+lam*se.dt+J[bn+k2];if(c<best){best=c;bk=k2;}}
+   let best=INF,bk=-1;const ks=lam>=0?ctx.iceSmooth:0;
+   for(let k2=ka;k2<=kb;k2++){const v2v=k2*dV;const va=(v1+v2v)/2;if(va<=0.05)continue;
+    const se=segEnergy(ctx,i,v1,v2v);if(!se||!se.feasible)continue;
+    const dv=v2v-v1;const c=se.Ebatt+lam*se.dt+ks*dv*dv+J[bn+k2];if(c<best){best=c;bk=k2;}}
    J[bi+k1]=best;nxt[bi+k1]=bk;}}
  const v=new Array(N).fill(0);let k=0;
  if(J[0]>=INF){let bc=INF;for(let kk=0;kk<=lim[0];kk++)if(J[kk]<bc){bc=J[kk];k=kk;}}
@@ -633,6 +661,7 @@ function energyProfile(ctx,v,from,to){from=from||0;to=(to==null?ctx.N-1:to);cons
    const pk=se?se.pw/1000:0;segPower[i]=powKW[i]=pk;cumTime[i+1]=time;cumWh[i+1]=fuelL;
    socArr[i+1]=Math.max(0,ctx.soc-fuelL/tankL*100);spdKmh[i+1]=v2*3.6;}
   const coveredKm=ctx.distKm[to]-ctx.distKm[from];
+  const adv=adviseGears(ctx,v);for(let i=from;i<to;i++)gears[i]=adv[i];
   return{isICE:true,fuelL,lkm:coveredKm>0?fuelL/coveredKm*100:0,gears,time,segPower,powKW,socArr,spdKmh,cumTime,cumWh,climb,descent,
    battJ:0,Wh:0,regenJ:0,regenKwh:0,fuelEnd:Math.max(0,ctx.soc-fuelL/tankL*100)};}
  let battJ=0,regenJ=0,time=0,climb=0,descent=0,socJ=ctx.soc/100*ctx.battCapJ;
@@ -644,7 +673,15 @@ function energyProfile(ctx,v,from,to){from=from||0;to=(to==null?ctx.N-1:to);cons
   socArr[i+1]=Math.max(0,socJ)/ctx.battCapJ*100;spdKmh[i+1]=v2*3.6;}
  return{battJ,Wh:battJ/3600,regenJ,regenKwh:regenJ/3.6e6,time,segPower,powKW,socArr,spdKmh,cumTime,cumWh,climb,descent};}
 
-function simulate(p){const ctx=buildContext(p);const v=(p.optMode==='optimal')?dpOptimal(ctx):optimalProfile(ctx);const ep=energyProfile(ctx,v);
+function smoothSpeedICE(ctx,v){const N=ctx.N,out=v.slice();
+ for(let pass=0;pass<2;pass++){const t=out.slice();
+  for(let i=1;i<N-1;i++){let s=t[i-1]+t[i]+t[i+1],c=3;if(i>=2){s+=t[i-2];c++;}if(i<N-2){s+=t[i+2];c++;}
+   out[i]=Math.min(s/c,ctx.vlim[i]);}
+  out[0]=0;out[N-1]=0;}
+ return out;}
+function simulate(p){const ctx=buildContext(p);let v=(p.optMode==='optimal')?dpOptimal(ctx):optimalProfile(ctx);
+ if(ctx.isICE)v=smoothSpeedICE(ctx,v);
+ const ep=energyProfile(ctx,v);
  const km=ctx.totalLen/1000;
  if(ctx.isICE)return{ctx,vOptMs:v,pts:ctx.pts,elev:ctx.elev,ds:ctx.ds,distKm:ctx.distKm,isICE:true,gears:ep.gears,tankL:ctx.ice.tankL,
   segPower:ep.segPower,powKW:ep.powKW,socArr:ep.socArr,spdKmh:ep.spdKmh,cumTime:ep.cumTime,cumWh:ep.cumWh,
